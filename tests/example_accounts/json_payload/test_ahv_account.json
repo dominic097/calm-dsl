@@ -5,6 +5,7 @@
             "type": "nutanix_pc",
             "sync_interval_secs": 3900,
             "data": {
+                "cred_type": "basic_auth",
                 "username": "username",
                 "server": "10.44.44.18",
                 "port": "9440",
