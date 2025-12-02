@@ -48,3 +48,34 @@ def remove_output_variables_from_bp(bp_json):
         for action in bp_json["action_list"]:
             action["runbook"].pop("output_variables", None)
             action["runbook"].pop("output_variable_list", None)
+
+    bp_json.pop("output_variable_list", None)
+
+    def _remove_recursive(obj):
+        if isinstance(obj, dict):
+            # pop if present at this level
+            if "output_variables" in obj and obj["output_variables"] == None:
+                # sometimes it might be None; we treat it as removable too
+                obj.pop("output_variables", None)
+            obj.pop("output_variables", None)
+            obj.pop("output_variable_list", None)
+            # recurse children
+            for v in list(obj.values()):
+                _remove_recursive(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                _remove_recursive(item)
+
+    _remove_recursive(bp_json)
+
+
+def remove_secret_values(obj):
+    """Recursively remove 'value' key inside any 'secret' dicts."""
+    if isinstance(obj, dict):
+        if "secret" in obj and isinstance(obj["secret"], dict):
+            obj["secret"]["value"] = ""
+        for v in obj.values():
+            remove_secret_values(v)
+    elif isinstance(obj, list):
+        for item in obj:
+            remove_secret_values(item)
