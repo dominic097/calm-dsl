@@ -120,10 +120,12 @@ class TestProjectCommands:
 
         # Create operation
         self._test_project_create_using_dsl(PROJECT_PATH)
-        if policy_config.get("policy_status", "False") == "True":
-            self._test_quotas_set_and_enabled_on_project_create(PROJECT_PATH)
         if self.VPC_FLAG:
             self._test_overlay_subnets()
+
+        if policy_config.get("policy_status", "False") == "True":
+            self._test_quotas_set_and_enabled_on_project_create(PROJECT_PATH)
+
         # Read operations
         click.echo("")
         self._test_project_describe_out_json()
@@ -712,7 +714,6 @@ class TestProjectCommands:
     def _test_overlay_subnets(self):
         """This is a test to check if the project created consists of overlay subnets"""
         NTNX_ACCOUNT_1 = ACCOUNTS["NUTANIX_PC"][1]
-        OVERLAY_SUBNETS = NTNX_ACCOUNT_1["OVERLAY_SUBNETS"][0]["NAME"]
-
+        OVERLAY_SUBNETS = NTNX_ACCOUNT_1["OVERLAY_SUBNETS"][1]["NAME"]
         project_data = get_project(self.dsl_project_name)
         assert OVERLAY_SUBNETS in str(project_data)
