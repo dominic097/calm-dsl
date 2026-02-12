@@ -1,4 +1,4 @@
-FROM python:3.8-alpine
+FROM python:3.10-alpine
 
 # Upgrade to latest pip and install setuptools
 RUN pip3 install --no-cache-dir --upgrade pip setuptools==70.0.0

@@ -20,7 +20,7 @@ from requests import Session as Session
 from requests_toolbelt import MultipartEncoder
 from requests.adapters import HTTPAdapter
 from requests.exceptions import ConnectTimeout
-from requests.packages.urllib3.util.retry import Retry
+from urllib3.util.retry import Retry
 
 from calm.dsl.log import get_logging_handle
 from calm.dsl.config import get_context
@@ -207,7 +207,7 @@ class Connection:
             retry_strategy = Retry(
                 total=3,
                 status_forcelist=[429, 500, 502, 503, 504],
-                method_whitelist=[
+                allowed_methods=[
                     "GET",
                     "PUT",
                     "DELETE",
