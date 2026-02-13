@@ -1,7 +1,7 @@
 """
 Calm Runbook Sample for running http tasks
 """
-import json
+import json, re
 
 from calm.dsl.runbooks import read_local_file
 from calm.dsl.runbooks import runbook
@@ -16,6 +16,12 @@ from utils import (
 from tests.utils import get_vpc_project, get_vpc_tunnel_using_account
 from tests.utils import replace_host_port_in_tests_url
 
+from calm.dsl.api.ncm_config_util import (
+    is_nc_enabled_by_config,
+    is_ncm_enabled_by_config,
+)
+
+
 AUTH_USERNAME = read_local_file(".tests/runbook_tests/auth_username")
 AUTH_PASSWORD = read_local_file(".tests/runbook_tests/auth_password")
 URL = read_local_file(".tests/runbook_tests/url")
@@ -24,8 +30,27 @@ URL = replace_host_port_in_tests_url(URL)
 
 ContextObj = get_context()
 server_config = ContextObj.get_server_config()
+nc_server_config = (
+    ContextObj.get_nc_server_config() if is_nc_enabled_by_config() else None
+)
+ncm_server_config = (
+    ContextObj.get_ncm_server_config() if is_ncm_enabled_by_config() else None
+)
 pc_ip = server_config["pc_ip"]
+
+# NChost cannot used directly since it redirects to IAM always so all tests fails. Switching to PC IP.
+def extract_ip_from_nc_host(s):
+    m = re.search(r"\b\d{1,3}(?:-\d{1,3}){3}\b", s)
+    return m.group(0).replace("-", ".") if m else None
+
+
+# Override the pc_ip with pc_ip extractedthe ncm_host
+if is_ncm_enabled_by_config():
+    nc_host = nc_server_config["host"]
+    pc_ip = extract_ip_from_nc_host(nc_host)
+
 TEST_URL = "https://{}:9440/".format(pc_ip)
+
 
 endpoint = Endpoint.HTTP(
     URL, verify=False, auth=Endpoint.Auth(AUTH_USERNAME, AUTH_PASSWORD)
@@ -49,7 +74,6 @@ endpoint_with_invalid_url = Endpoint.HTTP(
 
 def get_http_task_runbook(endpoint_file="http_endpoint_payload.json", config_file=None):
     """returns the runbook for http task"""
-
     global endpoint_payload
     endpoint_payload = change_uuids(read_test_config(file_name=endpoint_file), {})
 
@@ -221,10 +245,12 @@ def HTTPRelativeURLWithMacro(endpoints=[endpoint]):
 
 @runbook
 def HTTPEndpointWithMultipleURLs(endpoints=[endpoint_with_multiple_urls]):
-
-    base = Variable.Simple(  # noqa
-        "https://{}:9440/api/nutanix/v3".format(server_config["pc_ip"])
+    base = Variable.Simple(
+        "https://{}/api/nutanix/v3".format(ncm_server_config["host"])
+        if is_ncm_enabled_by_config()
+        else "https://{}:9440/api/nutanix/v3".format(server_config["pc_ip"])
     )
+
     # Creating an endpoint with POST call
     Task.HTTP.post(
         name="HTTPTask",
