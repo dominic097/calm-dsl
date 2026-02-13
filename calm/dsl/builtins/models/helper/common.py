@@ -1,5 +1,6 @@
 import sys
 import pytz
+import json
 from dateutil.parser import parse
 from dateutil import tz
 
@@ -10,7 +11,7 @@ from calm.dsl.config import get_context
 from calm.dsl.log import get_logging_handle
 from calm.dsl.constants import CACHE, TUNNEL
 from calm.dsl.db.table_config import ResourceTypeCache
-from calm.dsl.api.util import is_policy_check_required
+from calm.dsl.config.constants import CONFIG
 
 LOG = get_logging_handle(__name__)
 
@@ -500,9 +501,6 @@ def policy_required(func):
     """Decorator to check if policy is required & enabled before executing the function"""
 
     def wrapper(*args, **kwargs):
-        if not is_policy_check_required():
-            return True
-
         ContextObj = get_context()
         policy_status = ContextObj.get_policy_config()
         if not policy_status:
@@ -513,6 +511,72 @@ def policy_required(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+def get_ncm20_pc_server_config():
+    """
+    Retrieves
+    """
+    context = get_context()
+    nc_config = context.get_nc_server_config()
+    nc_username = nc_config.get(CONFIG.NC_SERVER.USERNAME, None)
+    nc_password = nc_config.get(CONFIG.NC_SERVER.PASSWORD, None)
+
+    client = get_api_client()
+
+    home_pc_uuid = get_home_pc_uuid(client)
+
+    result = json.loads(res.content)
+
+    res, err = client.multidomain.get_registered_domains()
+    if err:
+        LOG.error("Error retrieving Home PC FQDN:: {}".format(err))
+        sys.exit("Error retrieving Home PC FQDN")
+    result = json.loads(res.content)
+
+    pc_host = ""
+
+    for data in result.get("data", []):
+        if data.get("extId", "") == home_pc_uuid:
+            pc_host = data.get("fqdn", "")
+            LOG.info("Home PC FQDN: {}".format(pc_host))
+
+    return pc_host, "", nc_username, nc_password
+
+
+def get_home_pc_uuid(client):
+    """
+    Retrieves the home PC UUID from the client.
+    This is used to identify the home PC in the NCM.
+    Args:
+        client (object): The client object
+    Returns:
+        str: The home PC UUID.
+    """
+    # get ext id of home pc
+    res, err = client.onboarding.get_accounts({"passHomePcUuid": True})
+
+    if err:
+        LOG.error("Error retrieving Home PC account: {}".format(err))
+        sys.exit("Error retrieving Home PC account")
+
+    if hasattr(res, "headers"):
+        home_pc_uuid = res.headers.get("x-ntnx-home-pc-uuid")
+        if home_pc_uuid:
+            LOG.info("Home PC UUID: {}".format(home_pc_uuid))
+            return home_pc_uuid
+        else:
+            LOG.error(
+                "x-ntnx-home-pc-uuid header not found in response headers: {}".format(
+                    dict(res.headers)
+                )
+            )
+    else:
+        LOG.error(
+            "Unable to retrieve headers from response object: {}".format(type(res))
+        )
+
+    return ""
 
 
 def custom_decompile_for_tunnels(cls, cdict, tunnel_kind):

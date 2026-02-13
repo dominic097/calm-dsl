@@ -5,8 +5,8 @@ from .connection import REQUEST
 class PolicyAPI(ResourceAPI):
     def __init__(self, connection):
         super().__init__(connection, resource_type="policies")
-        self.POLICY_EXECUTION_LIST = self.PREFIX + "/{}/executions/list"
-        self.POLICY_EXECUTION = self.PREFIX + "/{}/executions/{}"
+        self.POLICY_EXECUTION_LIST = self.api_base_path + "/{}/executions/list"
+        self.POLICY_EXECUTION = self.api_base_path + "/{}/executions/{}"
 
     def list_policy_execution(self, uuid, params=None):
         return self.connection._call(

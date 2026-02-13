@@ -45,20 +45,20 @@ APP_SOURCES = [
 # TODO Add limit and offset
 @marketplace_get.command("bps")
 @click.option(
-    "--name", "-n", default=None, help="Filter by name of marketplace blueprints"
+    "--name", "-n", default=None, help="Filter by name of NCM store blueprints"
 )
 @click.option(
     "--quiet",
     "-q",
     is_flag=True,
     default=False,
-    help="Show only marketplace blueprint names",
+    help="Show only NCM store blueprint names",
 )
 @click.option(
     "--app_family",
     "-f",
     default="All",
-    help="Filter by app family category of marketplace blueprints",
+    help="Filter by app family category of NCM store blueprints",
 )
 @click.option(
     "--app_state",
@@ -66,17 +66,17 @@ APP_SOURCES = [
     "app_states",
     type=click.Choice(APP_STATES),
     multiple=True,
-    help="filter by state of marketplace blueprints",
+    help="filter by state of NCM store blueprints",
 )
 @click.option(
     "--filter",
     "filter_by",
     "-fb",
     default=None,
-    help="Filter marketplace blueprints by this string",
+    help="Filter NCM store blueprints by this string",
 )
 def _get_marketplace_bps(name, quiet, app_family, app_states, filter_by):
-    """Get marketplace manager blueprints"""
+    """Get NCM store manager blueprints"""
 
     get_marketplace_items(
         name=name,
@@ -98,23 +98,23 @@ def _get_marketplace_bps(name, quiet, app_family, app_states, filter_by):
     default="text",
     help="output format.",
 )
-@click.option("--version", "-v", default=None, help="Version of marketplace blueprint")
+@click.option("--version", "-v", default=None, help="Version of NCM store blueprint")
 @click.option(
     "--source",
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source of marketplace blueprint",
+    help="App Source of NCM store blueprint",
 )
 @click.option(
     "--app_state",
     "-a",
     default=None,
     type=click.Choice(APP_STATES),
-    help="State of marketplace blueprint",
+    help="State of NCM store blueprint",
 )
 def _describe_marketplace_bp(name, out, version, source, app_state):
-    """Describe a marketplace manager blueprint"""
+    """Describe a NCM store manager blueprint"""
 
     describe_marketplace_item(
         name=name, out=out, version=version, app_source=source, app_state=app_state
@@ -123,7 +123,7 @@ def _describe_marketplace_bp(name, out, version, source, app_state):
 
 @marketplace_launch.command("bp")
 @click.argument("name")
-@click.option("--version", "-v", default=None, help="Version of marketplace blueprint")
+@click.option("--version", "-v", default=None, help="Version of NCM store blueprint")
 @click.option("--project", "-pj", default=None, help="Project for the application")
 @click.option(
     "--environment", "-e", default=None, help="Environment for the application"
@@ -147,7 +147,7 @@ def _describe_marketplace_bp(name, out, version, source, app_state):
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source of marketplace blueprint",
+    help="App Source of NCM store blueprint",
 )
 @click.option("--watch/--no-watch", "-w", default=False, help="Watch scrolling output")
 @click.option(
@@ -178,9 +178,9 @@ def _launch_marketplace_bp(
     watch,
     poll_interval,
 ):
-    """Launch a marketplace manager blueprint
+    """Launch a NCM store manager blueprint
     All runtime variables will be prompted by default. When passing the 'ignore_runtime_variables' flag, no variables will be prompted and all default values will be used.
-    The marketplace-blueprint default values can be overridden by passing a Python file via 'launch_params'. Any variable not defined in the Python file will keep the default
+    The NCM store blueprint default values can be overridden by passing a Python file via 'launch_params'. Any variable not defined in the Python file will keep the default
     value defined in the blueprint. When passing a Python file, no variables will be prompted.
 
     \b
@@ -242,14 +242,14 @@ def _launch_marketplace_bp(
 @marketplace_decompile.command("bp", experimental=True)
 @click.argument("mpi_name")
 @click.option("--name", "-n", default=None, help="Name of blueprint")
-@click.option("--version", "-v", default=None, help="Version of marketplace blueprint")
+@click.option("--version", "-v", default=None, help="Version of NCM store blueprint")
 @click.option("--project", "-p", default=None, help="Project for the blueprint")
 @click.option(
     "--source",
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source of marketplace blueprint",
+    help="App Source of NCM store blueprint",
 )
 @click.option(
     "--with_secrets",
@@ -271,19 +271,19 @@ def _launch_marketplace_bp(
     "no_format",
     is_flag=True,
     default=False,
-    help="Disable formatting the decompiled marketplace blueprint using black",
+    help="Disable formatting the decompiled NCM store blueprint using black",
 )
 def _decompile_marketplace_bp(
     mpi_name, version, project, name, source, with_secrets, bp_dir, no_format
 ):
-    """Decompiles marketplace manager blueprint
+    """Decompiles NCM store manager blueprint
 
 
     \b
     Sample command examples:
-    i.) calm decompile marketplace bp "Jenkins" : Command will decompile marketplace blueprint "Jenkins" having latest version
-    ii.) calm decompile marketplace bp "Jenkins" --version "1.0.0": Command will decompile marketplace blueprint "Jenkins" having "1.0.0" version
-    iii.) calm decompile marketplace bp "Jenkins" --name "DSL_JENKINS_BLUEPRINT": Command will decompile marketplace bp "Jenkins" to DSL blueprint having name "DSL_JENKINS_BLUEPRINT" (see the name of blueprint class in decompiled blueprint.py file)"""
+    i.) calm decompile marketplace bp "Jenkins" : Command will decompile NCM store blueprint "Jenkins" having latest version
+    ii.) calm decompile marketplace bp "Jenkins" --version "1.0.0": Command will decompile NCM store blueprint "Jenkins" having "1.0.0" version
+    iii.) calm decompile marketplace bp "Jenkins" --name "DSL_JENKINS_BLUEPRINT": Command will decompile NCM store bp "Jenkins" to DSL blueprint having name "DSL_JENKINS_BLUEPRINT" (see the name of blueprint class in decompiled blueprint.py file)"""
 
     decompile_marketplace_bp(
         name=mpi_name,
@@ -299,10 +299,10 @@ def _decompile_marketplace_bp(
 
 @publish.command("bp")
 @click.argument("bp_name")
-@click.option("--version", "-v", required=True, help="Version of marketplace blueprint")
-@click.option("--name", "-n", default=None, help="Name of marketplace Blueprint")
+@click.option("--version", "-v", required=True, help="Version of NCM store blueprint")
+@click.option("--name", "-n", default=None, help="Name of NCM store Blueprint")
 @click.option(
-    "--description", "-d", default="", help="Description for marketplace blueprint"
+    "--description", "-d", default="", help="Description for NCM store blueprint"
 )
 @click.option(
     "--with_secrets",
@@ -316,14 +316,14 @@ def _decompile_marketplace_bp(
     "-e",
     is_flag=True,
     default=False,
-    help="Publish as new version of existing marketplace blueprint",
+    help="Publish as new version of existing NCM store blueprint",
 )
 @click.option(
     "--publish_to_marketplace",
     "-pm",
     is_flag=True,
     default=False,
-    help="Publish the blueprint directly to marketplace skipping the steps to approve, etc.",
+    help="Publish the blueprint directly to NCM store skipping the steps to approve, etc.",
 )
 @click.option(
     "--auto_approve",
@@ -337,13 +337,13 @@ def _decompile_marketplace_bp(
     "-p",
     "projects",
     multiple=True,
-    help="Projects for marketplace blueprint (used for approving blueprint)",
+    help="Projects for NCM store blueprint (used for approving blueprint)",
 )
 @click.option(
     "--category",
     "-c",
     default=None,
-    help="Category for marketplace blueprint (used for approving blueprint)",
+    help="Category for NCM store blueprint (used for approving blueprint)",
 )
 @click.option(
     "--file",
@@ -388,7 +388,7 @@ def publish_bp(
     all_projects=False,
     publish_without_platform_data=False,
 ):
-    """Publish a blueprint to marketplace manager"""
+    """Publish a blueprint to NCM store manager"""
 
     if not name:
         # Using blueprint name as the marketplace bp name if no name provided
@@ -431,23 +431,21 @@ def publish_bp(
 
 @marketplace_approve.command("bp")
 @click.argument("name", nargs=1)
-@click.option("--version", "-v", default=None, help="Version of marketplace blueprint")
-@click.option(
-    "--category", "-c", default=None, help="Category for marketplace blueprint"
-)
+@click.option("--version", "-v", default=None, help="Version of NCM store blueprint")
+@click.option("--category", "-c", default=None, help="Category for NCM store blueprint")
 @click.option(
     "--project",
     "-p",
     "projects",
     multiple=True,
-    help="Add projects to marketplace blueprint",
+    help="Add projects to NCM store blueprint",
 )
 @click.option(
     "--remove-project",
     "-rp",
     "remove_projects",
     multiple=True,
-    help="Remove projects from marketplace blueprint",
+    help="Remove projects from NCM store blueprint",
 )
 @click.option(
     "--all_projects",
@@ -457,7 +455,7 @@ def publish_bp(
     help="Approve bp to all projects",
 )
 def approve_bp(name, version, category, all_projects, projects=[], remove_projects=[]):
-    """Approves a marketplace manager blueprint"""
+    """Approves a NCM store manager blueprint"""
 
     approve_marketplace_item(
         name=name,
@@ -472,23 +470,21 @@ def approve_bp(name, version, category, all_projects, projects=[], remove_projec
 
 @marketplace_publish.command("bp")
 @click.argument("name", nargs=1)
-@click.option("--version", "-v", default=None, help="Version of marketplace blueprint")
-@click.option(
-    "--category", "-c", default=None, help="Category for marketplace blueprint"
-)
+@click.option("--version", "-v", default=None, help="Version of NCM store blueprint")
+@click.option("--category", "-c", default=None, help="Category for NCM store blueprint")
 @click.option(
     "--source",
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source for marketplace blueprint",
+    help="App Source for NCM store blueprint",
 )
 @click.option(
     "--project",
     "-p",
     "projects",
     multiple=True,
-    help="Projects for marketplace blueprint",
+    help="Projects for NCM store blueprint",
 )
 @click.option(
     "--all_projects",
@@ -498,7 +494,7 @@ def approve_bp(name, version, category, all_projects, projects=[], remove_projec
     help="Approve bp to all projects",
 )
 def _publish_marketplace_bp(name, version, category, source, all_projects, projects=[]):
-    """Publish a marketplace blueprint to marketplace store"""
+    """Publish a NCM store manager blueprint to NCM store"""
 
     publish_marketplace_item(
         name=name,
@@ -514,37 +510,35 @@ def _publish_marketplace_bp(name, version, category, source, all_projects, proje
 @marketplace_update.command("bp")
 @click.argument("name", nargs=1)
 @click.option(
-    "--version", "-v", required=True, help="Version of marketplace blueprint"
+    "--version", "-v", required=True, help="Version of NCM store blueprint"
 )  # Required to prevent unwanted update of published mpi
-@click.option(
-    "--category", "-c", default=None, help="Category for marketplace blueprint"
-)
+@click.option("--category", "-c", default=None, help="Category for NCM store blueprint")
 @click.option(
     "--project",
     "-p",
     "projects",
     multiple=True,
-    help="Projects for marketplace blueprint",
+    help="Projects for NCM store blueprint",
 )
-@click.option("--description", "-d", help="Description for marketplace blueprint")
+@click.option("--description", "-d", help="Description for NCM store blueprint")
 @click.option(
     "--source",
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source for marketplace blueprint",
+    help="App Source for NCM store blueprint",
 )
 @click.option(
     "--all_projects",
     "-ap",
     is_flag=True,
     default=False,
-    help="Update marketplace blueprints with all projects",
+    help="Update NCM store blueprints with all projects",
 )
 def _update_marketplace_bp(
     name, version, category, projects, description, source, all_projects
 ):
-    """Update a marketplace manager blueprint"""
+    """Update a NCM store manager blueprint"""
 
     update_marketplace_item(
         name=name,
@@ -561,24 +555,24 @@ def _update_marketplace_bp(
 @marketplace_delete.command("bp")
 @click.argument("name")
 @click.option(
-    "--version", "-v", required=True, help="Version of marketplace blueprint"
+    "--version", "-v", required=True, help="Version of NCM store blueprint"
 )  # Required to prevent unwanted delete of unknown mpi
 @click.option(
     "--source",
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source of marketplace blueprint",
+    help="App Source of NCM store blueprint",
 )
 @click.option(
     "--app_state",
     "-a",
     default=None,
     type=click.Choice(APP_STATES),
-    help="State of marketplace blueprint",
+    help="State of NCM store blueprint",
 )
 def _delete_marketplace_bp(name, version, source, app_state):
-    """Deletes marketplace manager blueprint"""
+    """Deletes NCM store manager blueprint"""
 
     delete_marketplace_item(
         name=name,
@@ -592,10 +586,10 @@ def _delete_marketplace_bp(name, version, source, app_state):
 @marketplace_reject.command("bp")
 @click.argument("name")
 @click.option(
-    "--version", "-v", required=True, help="Version of marketplace blueprint"
+    "--version", "-v", required=True, help="Version of NCM store blueprint"
 )  # Required to prevent unwanted rejection of unknown mpi
 def _reject_marketplace_bp(name, version):
-    """Reject marketplace manager blueprint"""
+    """Reject NCM store manager blueprint"""
 
     reject_marketplace_item(
         name=name, version=version, type=MARKETPLACE_ITEM.TYPES.BLUEPRINT
@@ -605,14 +599,14 @@ def _reject_marketplace_bp(name, version):
 @marketplace_unpublish.command("bp")
 @click.argument("name")
 @click.option(
-    "--version", "-v", default=None, help="Version of marketplace blueprint"
+    "--version", "-v", default=None, help="Version of NCM store blueprint"
 )  # Required to prevent unwanted unpublish of unknown mpi
 @click.option(
     "--source",
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source of marketplace blueprint",
+    help="App Source of NCM store blueprint",
 )
 @click.option(
     "--project",
@@ -629,7 +623,7 @@ def _reject_marketplace_bp(name, version):
     help="Unpublishes bp from all version",
 )
 def _unpublish_marketplace_bp(name, version, source, all_versions, projects=[]):
-    """Unpublish marketplace store blueprint"""
+    """Unpublish NCM store manager blueprint"""
 
     unpublish_marketplace_bp(
         name=name,

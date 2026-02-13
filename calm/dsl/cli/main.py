@@ -26,11 +26,19 @@ from calm.dsl.store import Version
 from calm.dsl.config.init_config import get_init_config_handle
 from calm.dsl.cli.run_script import *
 from calm.dsl.api.util import is_ncm_enabled
+from calm.dsl.api.ncm_config_util import (
+    is_nc_enabled_by_config,
+    is_ncm_enabled_by_config,
+)
 
 CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
 click_completion.init()
 LOG = get_logging_handle(__name__)
+
+
+SELF_SERVICE_ENABLED = "ENABLED"
+SELF_SERVICE_DISABLED = "DISABLED"
 
 
 @click.group(cls=FeatureFlagGroup, context_settings=CONTEXT_SETTINGS)
@@ -93,8 +101,10 @@ def main(ctx, config_file, sync):
         config_file = init_obj["CONFIG"]["location"] if not config_file else config_file
         config_handle = get_config_handle(config_file)
 
-        # Block all subsequent DSL command execution except `calm init dsl` if config is incompatible (doesn't contain ncm server config)
-        if not config_handle.ncm_server_config and ctx.invoked_subcommand != "init":
+        # Block all subsequent DSL command execution except `calm init dsl` if config is incompatible (doesn't contain ncm server and NC server config)
+        if (
+            not config_handle.ncm_server_config or not config_handle.nc_server_config
+        ) and ctx.invoked_subcommand != "init":
             LOG.error(
                 "DSL config incompatible with latest configuration. Run `calm init dsl` to make DSL config compatible with latest DSL."
             )
@@ -342,20 +352,19 @@ def server():
 @server.command("status")
 def get_server_status():
     """Get calm server connection status"""
+    client = get_api_client()
 
-    context = get_context()
-    ncm_server_config = context.get_ncm_server_config()
+    if is_nc_enabled_by_config():
+        service_enablement_status = SELF_SERVICE_ENABLED
 
-    if ncm_server_config.get("ncm_enabled", False):
+    elif is_ncm_enabled_by_config():
         LOG.info("Checking if NCM is enabled on Server")
-        client = get_api_client()
         service_enablement_status, _ = is_ncm_enabled(client)
         service_enablement_status = (
-            "ENABLED" if service_enablement_status else "DISABLED"
+            SELF_SERVICE_ENABLED if service_enablement_status else SELF_SERVICE_DISABLED
         )
     else:
         LOG.info("Checking if Calm is enabled on Server")
-        client = get_api_client()
         Obj = get_resource_api("services/nucalm/status", client.connection)
         res, err = Obj.read()
 
@@ -420,25 +429,25 @@ def launch():
 
 @main.group(cls=FeatureFlagGroup)
 def publish():
-    """Publish blueprints to marketplace"""
+    """Publish blueprints to NCM store"""
     pass
 
 
 @main.group(cls=FeatureFlagGroup)
 def approve():
-    """Approve blueprints in marketplace manager or approve event triggered by approval policies"""
+    """Approve blueprints in NCM store manager or approve event triggered by approval policies"""
     pass
 
 
 @main.group(cls=FeatureFlagGroup)
 def unpublish():
-    """Unpublish blueprints from marketplace"""
+    """Unpublish blueprints from NCM store manager"""
     pass
 
 
 @main.group(cls=FeatureFlagGroup)
 def reject():
-    """Reject blueprints from marketplace manager or reject event triggered by approval policies"""
+    """Reject blueprints from NCM store manager or reject event triggered by approval policies"""
     pass
 
 
@@ -693,4 +702,10 @@ def clone():
 @get.group(cls=FeatureFlagGroup)
 def usage():
     """Usage entities"""
+    pass
+
+
+@main.group(cls=FeatureFlagGroup)
+def deactivate():
+    """deactivate entities"""
     pass

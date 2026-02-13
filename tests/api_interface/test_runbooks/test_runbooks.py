@@ -5,7 +5,6 @@ import uuid
 
 from calm.dsl.cli.main import get_api_client
 from calm.dsl.cli.constants import RUNLOG
-from calm.dsl.api.project import ProjectAPI
 from calm.dsl.log import get_logging_handle
 from calm.dsl.config.context import get_context
 from calm.dsl.runbooks import create_endpoint_payload
@@ -35,9 +34,9 @@ class TestRunbooks:
         project_config = context_obj.get_project_config()
         project_name = project_config["name"]
 
-        project_obj = ProjectAPI(client.connection)
+        # Fetch project details
         params = {"filter": "name=={}".format(project_name)}
-        res, err = project_obj.list(params=params)
+        res, err = client.project.list(params=params)
         if err:
             pytest.fail("[{}] - {}".format(err["code"], err["error"]))
 

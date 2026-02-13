@@ -8,7 +8,7 @@ class EnvironmentAPI(ResourceAPI):
 
     def list(self, params={}, ignore_error=False):
         return self.connection._call(
-            self.LIST,
+            self.list_path,
             verify=False,
             request_json=params,
             method=REQUEST.METHOD.POST,

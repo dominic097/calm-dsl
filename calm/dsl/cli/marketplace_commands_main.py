@@ -19,65 +19,65 @@ from .utils import FeatureFlagGroup
 
 @get.group("marketplace", cls=FeatureFlagGroup)
 def marketplace_get():
-    """Get marketplace entities"""
+    """Get NCM store entities"""
     pass
 
 
 @describe.group("marketplace", cls=FeatureFlagGroup)
 def marketplace_describe():
-    """Describe marketplace entities"""
+    """Describe NCM store entities"""
     pass
 
 
 @launch.group("marketplace", cls=FeatureFlagGroup)
 def marketplace_launch():
-    """Launch marketplace entities"""
+    """Launch NCM store entities"""
     pass
 
 
 @decompile.group("marketplace", cls=FeatureFlagGroup)
 def marketplace_decompile():
-    """Decompile marketplace entities"""
+    """Decompile NCM store entities"""
     pass
 
 
 @approve.group("marketplace", cls=FeatureFlagGroup)
 def marketplace_approve():
-    """Approve marketplace entities"""
+    """Approve NCM store entities"""
     pass
 
 
 @publish.group("marketplace", cls=FeatureFlagGroup)
 def marketplace_publish():
-    """Publish marketplace entities"""
+    """Publish NCM store entities"""
     pass
 
 
 @update.group("marketplace", cls=FeatureFlagGroup)
 def marketplace_update():
-    """Update marketplace entities"""
+    """Update NCM store entities"""
     pass
 
 
 @delete.group("marketplace", cls=FeatureFlagGroup)
 def marketplace_delete():
-    """Delete marketplace entities"""
+    """Delete NCM store entities"""
     pass
 
 
 @reject.group("marketplace", cls=FeatureFlagGroup)
 def marketplace_reject():
-    """Reject marketplace entities"""
+    """Reject NCM store entities"""
     pass
 
 
 @unpublish.group("marketplace", cls=FeatureFlagGroup)
 def marketplace_unpublish():
-    """Unpublish marketplace entities"""
+    """Unpublish NCM store entities"""
     pass
 
 
 @run.group("marketplace", cls=FeatureFlagGroup)
 def marketplace_run():
-    """Run marketplace entities"""
+    """Run NCM store entities"""
     pass

@@ -2,6 +2,7 @@ from distutils.version import LooseVersion as LV
 
 from .resource import ResourceAPI
 from .connection import REQUEST
+from calm.dsl.constants import RESOURCE
 
 
 class ProjectAPI(ResourceAPI):
@@ -36,9 +37,11 @@ class ProjectAPI(ResourceAPI):
         calm_version = Version.get_version("Calm")
 
         if LV(calm_version) > LV("3.5.0"):
-            CALM_PROJECTS_PREFIX = ResourceAPI.ROOT + "/projects"
+            CALM_PROJECTS_PREFIX = RESOURCE.API_PREFIX.V3_API_PATH_PREFIX + "/projects"
         else:
-            CALM_PROJECTS_PREFIX = ResourceAPI.ROOT + "/calm_projects"
+            CALM_PROJECTS_PREFIX = (
+                RESOURCE.API_PREFIX.V3_API_PATH_PREFIX + "/calm_projects"
+            )
 
         CALM_PROJECTS_ITEM = CALM_PROJECTS_PREFIX + "/{}"
         CALM_PROJECTS_USAGE = CALM_PROJECTS_ITEM + "/usage"
@@ -57,9 +60,11 @@ class ProjectAPI(ResourceAPI):
         calm_version = Version.get_version("Calm")
         if LV(calm_version) >= LV("3.5.2") and LV(calm_version) < LV("3.6.1"):
             payload = get_projects_internal_payload(payload)
-            CALM_PROJECTS_PREFIX = ResourceAPI.ROOT + "/projects_internal"
+            CALM_PROJECTS_PREFIX = (
+                RESOURCE.API_PREFIX.V3_API_PATH_PREFIX + "/projects_internal"
+            )
         else:
-            CALM_PROJECTS_PREFIX = ResourceAPI.ROOT + "/projects"
+            CALM_PROJECTS_PREFIX = RESOURCE.API_PREFIX.V3_API_PATH_PREFIX + "/projects"
 
         CALM_PROJECTS_ITEM = CALM_PROJECTS_PREFIX + "/{}"
         return self.connection._call(
@@ -76,9 +81,11 @@ class ProjectAPI(ResourceAPI):
         calm_version = Version.get_version("Calm")
 
         if LV(calm_version) > LV("3.5.0"):
-            CALM_PROJECTS_PREFIX = ResourceAPI.ROOT + "/projects"
+            CALM_PROJECTS_PREFIX = RESOURCE.API_PREFIX.V3_API_PATH_PREFIX + "/projects"
         else:
-            CALM_PROJECTS_PREFIX = ResourceAPI.ROOT + "/calm_projects"
+            CALM_PROJECTS_PREFIX = (
+                RESOURCE.API_PREFIX.V3_API_PATH_PREFIX + "/calm_projects"
+            )
 
         CALM_PROJECTS_ITEM = CALM_PROJECTS_PREFIX + "/{}"
 
@@ -95,9 +102,11 @@ class ProjectAPI(ResourceAPI):
         calm_version = Version.get_version("Calm")
 
         if LV(calm_version) > LV("3.5.0"):
-            CALM_PROJECTS_PREFIX = ResourceAPI.ROOT + "/projects"
+            CALM_PROJECTS_PREFIX = RESOURCE.API_PREFIX.V3_API_PATH_PREFIX + "/projects"
         else:
-            CALM_PROJECTS_PREFIX = ResourceAPI.ROOT + "/calm_projects"
+            CALM_PROJECTS_PREFIX = (
+                RESOURCE.API_PREFIX.V3_API_PATH_PREFIX + "/calm_projects"
+            )
 
         CALM_PROJECTS_ITEM = CALM_PROJECTS_PREFIX + "/{}"
         CALM_PROJECTS_PENDING_TASKS = CALM_PROJECTS_ITEM + "/pending_tasks/{}"
@@ -113,7 +122,7 @@ class ProjectAPI(ResourceAPI):
     # So setting read timeout to 300 seconds
     def list(self, params={}, ignore_error=False):
         return self.connection._call(
-            self.LIST,
+            self.list_path,
             verify=False,
             request_json=params,
             method=REQUEST.METHOD.POST,

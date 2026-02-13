@@ -1,6 +1,8 @@
 """
-    Calm-DSL constants
+Calm-DSL constants
 """
+
+from enum import Enum
 
 
 class CACHE:
@@ -30,6 +32,7 @@ class CACHE:
         PROTECTION_POLICY = "app_protection_policy"
         TUNNEL = "tunnel"
         GLOBAL_VARIABLE = "global_variable"
+        DOMAIN = "domain"
 
     API_ENTITY_KIND_MAP = {
         "cluster": ENTITY.AHV_CLUSTER,
@@ -128,6 +131,10 @@ class CLOUD_PROVIDERS:
 
 class GLOBAL_VARIABLE:
     MIN_SUPPORTED_VERSION = "4.3.0"
+
+
+class DOMAIN:
+    MIN_SUPPORTED_VERSION = "4.3.1"
 
 
 class NETWORK_GROUP_TUNNEL_TASK:
@@ -338,6 +345,7 @@ class DSL_CONFIG:
 
 class ENTITY_KIND:
     "'kind' string for different entities"
+
     APP_ICON = "app_icon"
 
 
@@ -468,7 +476,28 @@ class PROJECT:
 class RESOURCE:
     """Stores and segregates resources based on their API type"""
 
-    NCM = {
+    PC = {
+        "tasks",
+        "network_function_chains",
+        "services/nucalm/status",
+        "categories/AppFamily",
+        "mh_vms",
+    }
+
+    NC = {"multidomain", "internal/healthz"}
+
+    IAM_AUTHN = {
+        "users",
+        "user-groups",
+        "directory-services",
+    }
+
+    IAM_AUTHZ = {
+        "roles",
+        "authorization-policies",
+    }
+
+    CALM = {
         "features/stratos/status",
         "features/approval_policy",
         "features/custom_provider/status",
@@ -570,23 +599,21 @@ class RESOURCE:
         "vmware/v6/vm_categories",
         # k8s api's
         "kubernetes/v1/karbon/clusters",
+        "onboarding",
     }
 
-    NON_NCM = {
+    DM = {
         "dm/v3/groups",
         "features/policy",
         "projects",
         "projects_internal",
-        "tasks",
-        "users",
-        "user_groups",
-        "roles",
-        "directory_services",
-        "access_control_policies",
-        "network_function_chains",
-        "services/nucalm/status",
-        "categories/AppFamily",
-        "mh_vms",
+    }
+
+    # TODO: we can do better segregation of APIs based on their prefix
+    # if we introduce subresource types - DMResourceAPI, CALMResourceAPI, etc.
+    # for now, we will use the resource type to segregate them
+    APIS_WITHOUT_PREFIX = {
+        "dm/v3/groups",
     }
 
     class ENTITY:
@@ -599,6 +626,21 @@ class RESOURCE:
             "mh_vm",
         }
 
+    class API_TYPE(Enum):
+        PC_API = 0
+        NC_API = 1
+        CALM_API = 2
+        DM_API = 3
+        IAM_AUTHN_API = 4
+        IAM_AUTHZ_API = 5
+
+    class API_PREFIX:
+        V3_API_PATH_PREFIX = "api/nutanix/v3"
+        IAM_V4_API_AUTHN_PATH_PREFIX = "api/iam/v4.0/authn"
+        IAM_V4_API_AUTHZ_PATH_PREFIX = "api/iam/v4.0/authz"
+        DM_API_PATH_PREFIX = "dm/v3"
+        CALM_API_PATH_PREFIX = "api/calm/v3.0"
+
 
 class MARKETPLACE:
     """Standard names of marketplace apps"""
@@ -606,6 +648,8 @@ class MARKETPLACE:
     class APP_NAME:
         INFRASTRUCTURE = "Infrastructure"
         NCM = "Nutanix Cloud Manager"
+        NCM_CENTRAL_PROJECT = "Manage Nutanix Central Projects"
+        NC = "Nutanix Central"
 
     FETCH_APP_DETAILS_PAYLOAD = {
         "fields": ["app_name", "uuid", "source_marketplace_name", "state", "app_url"],
@@ -616,6 +660,10 @@ class MARKETPLACE:
 class MULTICONNECT:
     PC_OBJ = "pc_conn_obj"
     NCM_OBJ = "ncm_conn_obj"
+
+    NC_DM_SUBDOMAIN = "dm.services"
+    NC_IAM_SUBDOMAIN = "iam.services"
+    NC_NCM_SUBDOMAIN = "ncm.services"
 
 
 class MULTIGROUP:
@@ -657,3 +705,15 @@ class TUNNEL:
 
     # Mapping backend states to UI states
     BACKEND_TO_UI_STATE_MAPPING = {v: k for k, v in UI_TO_BACKEND_STATE_MAPPING.items()}
+
+
+class USER:
+    class STATE:
+        ACTIVE = "ACTIVE"
+        INACTIVE = "INACTIVE"
+
+    ALL_ATTRIBUTES = "username,extId,displayName,idpId,userType,status"
+
+
+class ROLE:
+    ALL_ATTRIBUTES = "displayName,extId,description"

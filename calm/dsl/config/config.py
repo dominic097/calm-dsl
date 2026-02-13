@@ -1,5 +1,7 @@
 import os
 import configparser
+
+from peewee import ImproperlyConfigured
 from jinja2 import Environment, PackageLoader
 
 from .schema import validate_config
@@ -9,6 +11,9 @@ from calm.dsl.tools import make_file_dir
 from calm.dsl.log import get_logging_handle
 
 LOG = get_logging_handle(__name__)
+
+
+NC_SERVER_SECTION = "NC_SERVER"
 
 
 class ConfigFileParser:
@@ -52,6 +57,22 @@ class ConfigFileParser:
                     ncm_server_config[k] = v
 
         return ncm_server_config
+
+    def get_nc_server_config(self):
+        """
+        Returns the NC server config
+        """
+        nc_server_config = {}
+        if NC_SERVER_SECTION in self._CONFIG_PARSER_OBJECT:
+            for k, v in self._CONFIG_PARSER_OBJECT.items(NC_SERVER_SECTION):
+                if k == CONFIG.NC_SERVER.ENABLED:
+                    nc_server_config[k] = self._CONFIG_PARSER_OBJECT[
+                        NC_SERVER_SECTION
+                    ].getboolean(k)
+                else:
+                    nc_server_config[k] = v
+
+        return nc_server_config
 
     def get_project_config(self):
         """returns project config"""
@@ -163,6 +184,7 @@ class ConfigHandle:
 
         self.server_config = config_obj.get_server_config()
         self.ncm_server_config = config_obj.get_ncm_server_config()
+        self.nc_server_config = config_obj.get_nc_server_config()
         self.project_config = config_obj.get_project_config()
         self.log_config = config_obj.get_log_config()
         self.policy_config = config_obj.get_policy_config()
@@ -181,6 +203,12 @@ class ConfigHandle:
         """returns NCM server configuration"""
 
         return self.ncm_server_config
+
+    def get_nc_server_config(self):
+        """
+        Returns the NC server configuration
+        """
+        return self.nc_server_config
 
     def get_project_config(self):
         """returns project configuration"""
@@ -229,11 +257,15 @@ class ConfigHandle:
         cls,
         ip,
         port,
-        username,
-        password,
+        pc_username,
+        pc_password,
         ncm_enabled,
         ncm_host,
         ncm_port,
+        nc_enabled,
+        nc_host,
+        nc_username,
+        nc_password,
         api_key_location,
         project_name,
         log_level,
@@ -254,11 +286,15 @@ class ConfigHandle:
         text = template.render(
             ip=ip,
             port=port,
-            username=username,
-            password=password,
+            username=pc_username,
+            password=pc_password,
             ncm_enabled=ncm_enabled,
             ncm_host=ncm_host,
             ncm_port=ncm_port,
+            nc_enabled=nc_enabled,
+            nc_host=nc_host,
+            nc_username=nc_username,
+            nc_password=nc_password,
             api_key_location=api_key_location,
             project_name=project_name,
             log_level=log_level,
@@ -283,6 +319,10 @@ class ConfigHandle:
         ncm_enabled,
         ncm_host,
         ncm_port,
+        nc_enabled,
+        nc_host,
+        nc_username,
+        nc_password,
         api_key_location,
         project_name,
         log_level,
@@ -306,6 +346,10 @@ class ConfigHandle:
             ncm_enabled,
             ncm_host,
             ncm_port,
+            nc_enabled,
+            nc_host,
+            nc_username,
+            nc_password,
             api_key_location,
             project_name,
             log_level,
@@ -337,6 +381,10 @@ def set_dsl_config(
     ncm_enabled,
     ncm_host,
     ncm_port,
+    nc_enabled,
+    nc_host,
+    nc_username,
+    nc_password,
     api_key_location,
     project_name,
     log_level,
@@ -351,7 +399,6 @@ def set_dsl_config(
     read_timeout,
     cp_status,
 ):
-
     """
     overrides the existing server/dsl configuration
     Note: This helper assumes that valid configuration is present. It is invoked just to update the existing configuration.
@@ -375,6 +422,10 @@ def set_dsl_config(
         ncm_enabled=ncm_enabled,
         ncm_host=ncm_host,
         ncm_port=ncm_port,
+        nc_enabled=nc_enabled,
+        nc_host=nc_host,
+        nc_username=nc_username,
+        nc_password=nc_password,
         api_key_location=api_key_location,
         project_name=project_name,
         log_level=log_level,

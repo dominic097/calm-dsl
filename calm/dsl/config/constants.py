@@ -45,6 +45,13 @@ class CONFIG:
         HOST = "host"
         PORT = "port"
 
+    class NC_SERVER(IterableConstants):
+        ENABLED = "enabled"
+        HOST = "host"
+        PORT = "port"
+        USERNAME = "username"
+        PASSWORD = "password"
+
     class PROJECT(IterableConstants):
         NAME = "name"
 

@@ -8,7 +8,6 @@ from .connection import REQUEST
 from .util import strip_secrets, patch_secrets
 from calm.dsl.config import get_context
 from calm.dsl.log import get_logging_handle
-from .project import ProjectAPI
 
 LOG = get_logging_handle(__name__)
 
@@ -16,29 +15,31 @@ LOG = get_logging_handle(__name__)
 class RunbookAPI(ResourceAPI):
     def __init__(self, connection):
         super().__init__(connection, resource_type="runbooks")
-        self.UPLOAD = self.PREFIX + "/import_json"
-        self.UPDATE_USING_NAMES = self.PREFIX + "/{}/update"
-        self.RUNBOOK_RUNLOGS_LIST = self.PREFIX + "/runlogs/list"
-        self.RUN = self.PREFIX + "/{}/run"
-        self.EXECUTE = self.PREFIX + "/{}/execute"  # For calm versions >= 3.3.2
-        self.POLL_RUN = self.PREFIX + "/runlogs/{}"
-        self.PAUSE = self.PREFIX + "/runlogs/{}/pause"
-        self.PLAY = self.PREFIX + "/runlogs/{}/play"
-        self.RERUN = self.PREFIX + "/runlogs/{}/rerun"
-        self.RUNLOG_LIST = self.PREFIX + "/runlogs/{}/children/list"
-        self.RUNLOG_OUTPUT = self.PREFIX + "/runlogs/{}/children/{}/output"
-        self.RUNLOG_RESUME = self.PREFIX + "/runlogs/{}/children/{}/resume"
-        self.RUNLOG_ABORT = self.PREFIX + "/runlogs/{}/abort"
-        self.RUN_SCRIPT = self.PREFIX + "/{}/run_script"
-        self.RUN_SCRIPT_OUTPUT = self.PREFIX + "/{}/run_script/output/{}/{}"
-        self.EXPORT_FILE = self.ITEM + "/export_file"
-        self.IMPORT_FILE = self.PREFIX + "/import_file"
-        self.EXPORT_JSON = self.ITEM + "/export_json"
-        self.EXPORT_JSON_WITH_SECRETS = self.ITEM + "/export_json?keep_secrets=true"
-        self.MARKETPLACE_EXECUTE = self.PREFIX + "/marketplace_execute"
-        self.MARKETPLACE_CLONE = self.PREFIX + "/marketplace_clone"
-        self.VARIABLE_VALUES = self.ITEM + "/variables/{}/values"
-        self.CLONE = self.PREFIX + "/{}/clone"
+        self.UPLOAD = self.api_base_path + "/import_json"
+        self.UPDATE_USING_NAMES = self.api_base_path + "/{}/update"
+        self.RUNBOOK_RUNLOGS_LIST = self.api_base_path + "/runlogs/list"
+        self.RUN = self.api_base_path + "/{}/run"
+        self.EXECUTE = self.api_base_path + "/{}/execute"  # For calm versions >= 3.3.2
+        self.POLL_RUN = self.api_base_path + "/runlogs/{}"
+        self.PAUSE = self.api_base_path + "/runlogs/{}/pause"
+        self.PLAY = self.api_base_path + "/runlogs/{}/play"
+        self.RERUN = self.api_base_path + "/runlogs/{}/rerun"
+        self.RUNLOG_LIST = self.api_base_path + "/runlogs/{}/children/list"
+        self.RUNLOG_OUTPUT = self.api_base_path + "/runlogs/{}/children/{}/output"
+        self.RUNLOG_RESUME = self.api_base_path + "/runlogs/{}/children/{}/resume"
+        self.RUNLOG_ABORT = self.api_base_path + "/runlogs/{}/abort"
+        self.RUN_SCRIPT = self.api_base_path + "/{}/run_script"
+        self.RUN_SCRIPT_OUTPUT = self.api_base_path + "/{}/run_script/output/{}/{}"
+        self.EXPORT_FILE = self.item_path + "/export_file"
+        self.IMPORT_FILE = self.api_base_path + "/import_file"
+        self.EXPORT_JSON = self.item_path + "/export_json"
+        self.EXPORT_JSON_WITH_SECRETS = (
+            self.item_path + "/export_json?keep_secrets=true"
+        )
+        self.MARKETPLACE_EXECUTE = self.api_base_path + "/marketplace_execute"
+        self.MARKETPLACE_CLONE = self.api_base_path + "/marketplace_clone"
+        self.VARIABLE_VALUES = self.item_path + "/variables/{}/values"
+        self.CLONE = self.api_base_path + "/{}/clone"
 
     def upload(self, payload):
         return self.connection._call(
@@ -191,11 +192,15 @@ class RunbookAPI(ResourceAPI):
             ContextObj = get_context()
             project_config = ContextObj.get_project_config()
             project_name = project_config["name"]
-            projectObj = ProjectAPI(self.connection)
+
+            # Importing here to avoid circular import
+            from calm.dsl.api import get_api_client
+
+            client = get_api_client()
 
             # Fetch project details
             params = {"filter": "name=={}".format(project_name)}
-            res, err = projectObj.list(params=params)
+            res, err = client.project.list(params=params)
             if err:
                 raise Exception("[{}] - {}".format(err["code"], err["error"]))
 

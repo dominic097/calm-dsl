@@ -10,14 +10,14 @@ LOG = get_logging_handle(__name__)
 class AccountsAPI(ResourceAPI):
     def __init__(self, connection):
         super().__init__(connection, resource_type="accounts")
-        self.VERIFY = self.PREFIX + "/{}/verify"
-        self.VMS_LIST = self.ITEM + "/vms/list"
+        self.VERIFY = self.api_base_path + "/{}/verify"
+        self.VMS_LIST = self.item_path + "/vms/list"
         self.RESOURCE_TYPES_LIST_BASED_ON_ACCOUNT = (
-            self.PREFIX + "/{}/resource_types/list"
+            self.api_base_path + "/{}/resource_types/list"
         )
-        self.PLATFORM_SYNC = self.PREFIX + "/{}/sync"
-        self.CREATE = self.PREFIX
-        self.UPDATE = self.PREFIX + "/{}"
+        self.PLATFORM_SYNC = self.api_base_path + "/{}/sync"
+        self.CREATE = self.api_base_path
+        self.UPDATE = self.api_base_path + "/{}"
 
     def verify(self, id):
         return self.connection._call(

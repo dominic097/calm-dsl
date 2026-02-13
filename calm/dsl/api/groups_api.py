@@ -1,7 +1,7 @@
 from .resource import ResourceAPI
 from .connection import REQUEST
 from calm.dsl.constants import RESOURCE, MULTICONNECT, MULTIGROUP
-from calm.dsl.api.connection import Connection
+from calm.dsl.api.connection import Connection, MultiConnection, NCMultiConnection
 
 
 class MultiGroupsAPI:
@@ -10,9 +10,16 @@ class MultiGroupsAPI:
         if isinstance(connection, Connection):
             self.pc_connection = connection
             self.ncm_connection = connection
-        else:
+        elif isinstance(connection, MultiConnection):
             self.pc_connection = getattr(connection, MULTICONNECT.PC_OBJ)
             self.ncm_connection = getattr(connection, MULTICONNECT.NCM_OBJ)
+        elif isinstance(connection, NCMultiConnection):
+            self.pc_connection = connection.pc_connection
+            self.ncm_connection = connection.ncm_connection
+        else:
+            raise TypeError(
+                "MultiGroupsAPI requires Connection, MultiConnection, or NCMultiConnection types..."
+            )
 
         setattr(self, MULTIGROUP.PC_OBJ, GroupsAPI(self.pc_connection))
         setattr(self, MULTIGROUP.NCM_OBJ, GroupsAPI(self.ncm_connection))
@@ -43,11 +50,11 @@ class MultiGroupsAPI:
 
 class GroupsAPI(ResourceAPI):
     def __init__(self, connection):
-        super().__init__(connection, resource_type="groups")
+        super().__init__(connection, resource_type="groups", multi_owned=True)
 
     def create(self, payload):
         return self.connection._call(
-            self.PREFIX,
+            self.api_base_path,
             verify=False,
             request_json=payload,
             method=REQUEST.METHOD.POST,

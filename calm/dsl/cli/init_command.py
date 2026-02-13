@@ -1,3 +1,4 @@
+from calm.dsl.db.table_config import ncm_server_config
 import click
 import os
 import json
@@ -23,22 +24,31 @@ from calm.dsl.api import (
     get_resource_api,
     get_client_handle_obj,
     get_multi_client_handle_obj,
+    get_nc_multi_client_handle,
+    reset_api_client_handle,
 )
 from calm.dsl.store import Cache
 from calm.dsl.init import init_bp, init_runbook, init_provider
 from calm.dsl.providers import get_provider_types
 from calm.dsl.store import Version
 from calm.dsl.constants import (
+    MULTICONNECT,
     POLICY,
     STRATOS,
     DSL_CONFIG,
     CLOUD_PROVIDERS,
-    MARKETPLACE,
 )
 from calm.dsl.builtins import file_exists
-from calm.dsl.api.util import get_auth_info, is_ncm_enabled, fetch_host_port_from_url
+from calm.dsl.api.util import (
+    get_auth_info,
+    is_ncm_enabled,
+    fetch_host_port_from_url,
+    is_nc_enabled,
+    is_ncm_enabled,
+)
 from .main import init, set
 from calm.dsl.log import get_logging_handle, CustomLogging
+from calm.dsl.builtins.models.helper.common import get_home_pc_uuid
 
 LOG = get_logging_handle(__name__)
 DEFAULT_CONNECTION_CONFIG = get_default_connection_config()
@@ -51,28 +61,28 @@ DEFAULT_LOG_CONFIG = get_default_log_config()
     "-i",
     envvar="CALM_DSL_PC_IP",
     default=None,
-    help="Prism Central server IP or hostname",
+    help="Prism/Nutanix Central server IP or hostname",
 )
 @click.option(
     "--port",
     "-P",
     envvar="CALM_DSL_PC_PORT",
     default=None,
-    help="Prism Central server port number",
+    help="Prism Central server port number (skip for Nutanix Central)",
 )
 @click.option(
     "--username",
     "-u",
     envvar="CALM_DSL_PC_USERNAME",
     default=None,
-    help="Prism Central username",
+    help="Prism/Nutanix Central username",
 )
 @click.option(
     "--password",
     "-p",
     envvar="CALM_DSL_PC_PASSWORD",
     default=None,
-    help="Prism Central password",
+    help="Prism/Nutanix Central password",
 )
 @click.option(
     "--db_file",
@@ -161,14 +171,14 @@ def initialize_engine(
     Initializes the calm dsl engine.
 
     NOTE: Env variables(if available) will be used as defaults for configuration
-        i.) CALM_DSL_PC_IP: Prism Central Host
-        ii.) CALM_DSL_PC_PORT: Prism Central Port
-        iii.) CALM_DSL_PC_USERNAME: Prism Central username
-        iv.) CALM_DSL_PC_PASSWORD: Prism Central password
+        i.) CALM_DSL_PC_IP: Prism/Nutanix Central Host
+        ii.) CALM_DSL_PC_PORT: Prism Central Port (skip for Nutanix Central)
+        iii.) CALM_DSL_PC_USERNAME: Prism/Nutanix Central username
+        iv.) CALM_DSL_PC_PASSWORD: Prism/Nutanix Central password
         v.) CALM_DSL_DEFAULT_PROJECT: Default project name
-        vi.) CALM_DSL_CONFIG_FILE_LOCATION: Default config file location where dsl config will be stored
-        vii.) CALM_DSL_LOCAL_DIR_LOCATION: Default local directory location to store secrets
-        viii.) CALM_DSL_DB_LOCATION: Default internal dsl db location
+        x.) CALM_DSL_CONFIG_FILE_LOCATION: Default config file location where dsl config will be stored
+        xi.) CALM_DSL_LOCAL_DIR_LOCATION: Default local directory location to store secrets
+        xii.) CALM_DSL_DB_LOCATION: Default internal dsl db location
 
     """
     if api_key_location:
@@ -180,8 +190,8 @@ def initialize_engine(
     set_server_details(
         ip=ip,
         port=port,
-        username=username,
-        password=password,
+        pc_username=username,
+        pc_password=password,
         project_name=project_name,
         db_file=db_file,
         local_dir=local_dir,
@@ -255,8 +265,8 @@ def _fetch_ncm_decoupled_status(client):
 def set_server_details(
     ip,
     port,
-    username,
-    password,
+    pc_username,
+    pc_password,
     project_name,
     db_file,
     local_dir,
@@ -268,24 +278,29 @@ def set_server_details(
     api_key_location,
 ):
 
-    if not (ip and port and username and password and project_name):
+    LOG.info("Skip port for Nutanix Central, if provided it will be ignored")
+    if not (ip and port and pc_username and pc_password and project_name):
         click.echo("Please provide Calm DSL settings:\n")
 
-    host = ip or click.prompt("Prism Central Host", default="")
+    host = ip or click.prompt("Prism/Nutanix Central Host", default="")
 
     if api_key_location:
         cred = get_auth_info(api_key_location)
-        username = cred.get("username")
-        password = cred.get("password")
+        pc_username = cred.get("username")
+        pc_password = cred.get("password")
         port = DSL_CONFIG.SAAS_PORT
     else:
         port = port or click.prompt("Port", default="9440")
-        username = username or click.prompt("Username", default="admin")
-        password = password or click.prompt("Password", default="", hide_input=True)
+        pc_username = pc_username or click.prompt("Username", default="admin")
+        pc_password = pc_password or click.prompt(
+            "Password", default="", hide_input=True
+        )
 
     project_name = project_name or click.prompt(
         "Project", default=DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME
     )
+
+    nc_host, nc_username, nc_password = host, pc_username, pc_password
 
     # Do not prompt for init config variables, Take default values for init.ini file
     config_file = config_file or get_default_config_file()
@@ -294,26 +309,33 @@ def set_server_details(
 
     if port == DSL_CONFIG.SAAS_PORT:
         if api_key_location:
-            LOG.info("Authenticating with username: {}".format(username))
+            LOG.info("Authenticating with username: {}".format(pc_username))
         else:
             LOG.warning(DSL_CONFIG.SAAS_LOGIN_WARN)
 
-    # Get NCM-FQDN using temporary client handle
-    client = get_client_handle_obj(host, port, auth=(username, password))
-    ncm_enabled, ncm_host, ncm_port = _fetch_ncm_decoupled_status(client)
+    (
+        client,
+        nc_enabled,
+        nc_host,
+        ncm_enabled,
+        ncm_host,
+        ncm_port,
+    ) = _resolve_client_with_context_update(
+        host,
+        port,
+        pc_username,
+        pc_password,
+        nc_host,
+        nc_username,
+        nc_password,
+    )
 
-    # Use temporary multi client handle if NCM is enabled
-    if ncm_enabled:
-        # update ncm_server_config in DSL context to use it for API routing.
-        ContextObj = get_context()
-        ContextObj.update_ncm_server_context(ncm_enabled, ncm_host, ncm_port)
+    if nc_enabled and ncm_enabled:
+        get_home_pc_uuid(client)
 
-        client = get_multi_client_handle_obj(
-            host, port, ncm_host, ncm_port, auth=(username, password)
-        )
-
-    # check calm enablement status when NCM is not decoupled
-    if not ncm_enabled:
+    # NCM not deployed (neither NCM 1.5 nor NCM 2.0+)
+    if not nc_enabled and not ncm_enabled:
+        # check calm enablement status when NCM is not decoupled
         LOG.info("Checking if Calm is enabled on Server")
         Obj = get_resource_api("services/nucalm/status", client.connection)
         res, err = Obj.read()
@@ -406,18 +428,22 @@ def set_server_details(
         LOG.info("Project '{}' verified successfully".format(project_name))
 
     if api_key_location:
-        username = DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME
-        password = DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME
+        pc_username = DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME
+        pc_password = DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME
 
     # Writing configuration to file
     set_dsl_config(
         host=host,
         port=port,
-        username=username,
-        password=password,
-        ncm_enabled=ncm_enabled or False,
+        username=pc_username,
+        password=pc_password,
+        ncm_enabled=ncm_enabled,
         ncm_host=ncm_host,
         ncm_port=ncm_port,
+        nc_enabled=nc_enabled,
+        nc_host=nc_host,
+        nc_username=nc_username,
+        nc_password=nc_password,
         api_key_location=api_key_location or DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME,
         project_name=project_name,
         log_level=log_level,
@@ -435,7 +461,17 @@ def set_server_details(
 
     # Updating context for using latest config data
     LOG.info("Updating context for using latest config file data")
-    init_context()
+    # make sure to use get_context() to get the context object, instead of initializing it in multiple places
+    # this will ensure that the context is initialized only once
+    # TODO: we should use a singleton pattern for context initialization
+    context = get_context()
+    # Reset configuration to reload from the saved config file (especially important in NC mode where PC host is discovered)
+    context.reset_configuration()
+
+    # Reset global API client handle so it picks up the updated context with correct PC host
+    # This is critical in NC mode where PC host is discovered and saved to config after initial client creation
+    if nc_enabled:
+        reset_api_client_handle()
 
     if log_level:
         CustomLogging.set_verbose_level(getattr(CustomLogging, log_level))
@@ -535,28 +571,30 @@ def init_dsl_provider(provider_name, dir_name):
     "host",
     envvar="PRISM_SERVER_IP",
     default=None,
-    help="Prism Central server IP or hostname",
+    help="Prism/Nutanix Central server IP or hostname",
 )
 @click.option(
     "--port",
     "-P",
     envvar="PRISM_SERVER_PORT",
     default=None,
-    help="Prism Central server port number",
+    help="Prism Central server port number(skip for Nutanix Central)",
 )
 @click.option(
     "--username",
     "-u",
+    "pc_username",
     envvar="PRISM_USERNAME",
     default=None,
-    help="Prism Central username",
+    help="Prism/Nutanix Central username",
 )
 @click.option(
     "--password",
     "-p",
+    "pc_password",
     envvar="PRISM_PASSWORD",
     default=None,
-    help="Prism Central password",
+    help="Prism/Nutanix Central password",
 )
 @click.option("--project", "-pj", "project_name", help="Project name for entity")
 @click.option(
@@ -606,8 +644,8 @@ def init_dsl_provider(provider_name, dir_name):
 def _set_config(
     host,
     port,
-    username,
-    password,
+    pc_username,
+    pc_password,
     project_name,
     db_location,
     log_level,
@@ -624,10 +662,12 @@ def _set_config(
     Note: Cache will be updated if supplied host is different from configured host.
     """
 
-    # Fetching context object
-    ContextObj = get_context()
+    LOG.info("Skip port for Nutanix Central, if provided it will be ignored")
 
-    server_config = ContextObj.get_server_config()
+    # Fetching context object
+    context = get_context()
+
+    server_config = context.get_server_config()
 
     # Update cache if there is change in host ip
     update_cache = host != server_config["pc_ip"] if host else False
@@ -650,32 +690,49 @@ def _set_config(
     stored_username = cred.get("username")
     stored_password = cred.get("password")
 
-    username = username or stored_username
-    password = password or stored_password
-    project_config = ContextObj.get_project_config()
+    pc_username = pc_username or stored_username
+    pc_password = pc_password or stored_password
+    project_config = context.get_project_config()
     project_name = project_name or project_config.get("name")
 
     if port == DSL_CONFIG.SAAS_PORT:
         if api_key_location:
-            LOG.info("Authenticating with username: {}".format(username))
+            LOG.info("Authenticating with username: {}".format(pc_username))
         else:
             LOG.warning(DSL_CONFIG.SAAS_LOGIN_WARN)
 
-    # Get NCM-FQDN using temporary client handle
-    client = get_client_handle_obj(host, port, auth=(username, password))
-    ncm_enabled, ncm_host, ncm_port = _fetch_ncm_decoupled_status(client)
+    nc_config = context.get_nc_server_config()
 
-    # Use temporary multi client handle if NCM is enabled
-    if ncm_enabled:
-        # update ncm_server_config in DSL context to use it for API routing.
-        ContextObj.update_ncm_server_context(ncm_enabled, ncm_host, ncm_port)
+    nc_enabled = nc_config.get("enabled", False)
+    nc_host = host or nc_config.get("host", "")
+    nc_username = pc_username or nc_config.get("username", "")
+    nc_password = pc_password or nc_config.get("password", "")
 
-        client = get_multi_client_handle_obj(
-            host, port, ncm_host, ncm_port, auth=(username, password)
-        )
+    nc_host, nc_username, nc_password = host, pc_username, pc_password
 
-    # check calm enablement status when NCM is not decoupled
-    if not ncm_enabled:
+    (
+        client,
+        nc_enabled,
+        nc_host,
+        ncm_enabled,
+        ncm_host,
+        ncm_port,
+    ) = _resolve_client_with_context_update(
+        host,
+        port,
+        pc_username,
+        pc_password,
+        nc_host,
+        nc_username,
+        nc_password,
+    )
+
+    if nc_enabled and ncm_enabled:
+        get_home_pc_uuid(client)
+
+    # NCM not deployed (neither NCM 1.5 nor NCM 2.0+)
+    if not nc_enabled and not ncm_enabled:
+        # check calm enablement status when NCM is not decoupled
         LOG.info("Checking if Calm is enabled on Server")
         Obj = get_resource_api("services/nucalm/status", client.connection)
         res, err = Obj.read()
@@ -767,37 +824,41 @@ def _set_config(
             sys.exit(-1)
         LOG.info("Project '{}' verified successfully".format(project_name))
 
-    log_config = ContextObj.get_log_config()
+    log_config = context.get_log_config()
     log_level = log_level or log_config.get("level") or "INFO"
 
     # Take init_configuration from user params or init file
-    init_config = ContextObj.get_init_config()
+    init_config = context.get_init_config()
     config_file = (
-        config_file or ContextObj._CONFIG_FILE or init_config["CONFIG"]["location"]
+        config_file or context._CONFIG_FILE or init_config["CONFIG"]["location"]
     )
     db_location = db_location or init_config["DB"]["location"]
     local_dir = local_dir or init_config["LOCAL_DIR"]["location"]
 
     # Get connection config
-    connection_config = ContextObj.get_connection_config()
+    connection_config = context.get_connection_config()
     if retries_enabled is None:  # Not supplied in command
         retries_enabled = connection_config["retries_enabled"]
     connection_timeout = connection_timeout or connection_config["connection_timeout"]
     read_timeout = read_timeout or connection_config["read_timeout"]
 
     if api_key_location:
-        username = DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME
-        password = DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME
+        pc_username = DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME
+        pc_password = DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME
 
     # Set the dsl configuration
     set_dsl_config(
         host=host,
         port=port,
-        username=username,
-        password=password,
-        ncm_enabled=ncm_enabled or False,
+        username=pc_username,
+        password=pc_password,
+        ncm_enabled=ncm_enabled,
         ncm_host=ncm_host,
         ncm_port=ncm_port,
+        nc_enabled=nc_enabled,
+        nc_host=nc_host,
+        nc_username=nc_username,
+        nc_password=nc_password,
         api_key_location=api_key_location or DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME,
         project_name=project_name,
         db_location=db_location,
@@ -815,6 +876,104 @@ def _set_config(
     LOG.info("Configuration changed successfully")
 
     # Updating context for using latest config data
-    init_context()
+    # make sure to use get_context() to get the context object, instead of initializing it in multiple places
+    # this will ensure that the context is initialized only once
+    # TODO: we should use a singleton pattern for context initialization
+    get_context()
+    # Reset configuration to reload from the saved config file (especially important in NC mode where PC host is discovered)
+    context.reset_configuration()
+
+    # Reset global API client handle so it picks up the updated context with correct PC host
+    # This is critical in NC mode where PC host is discovered and saved to config after initial client creation
+    if nc_enabled:
+        reset_api_client_handle()
+
     if update_cache:
         sync_cache()
+
+
+def _resolve_client_with_context_update(
+    host: str,
+    port: str,
+    pc_username: str,
+    pc_password: str,
+    nc_host: str,
+    nc_username: str,
+    nc_password: str,
+):
+    """
+    Resolves the client and update the context with NC and NCM information.
+    """
+    client = None
+    ncm_host = None
+    ncm_port = None
+    nc_enabled = False
+    ncm_enabled = False
+
+    context = get_context()
+    context.update_pc_server_context(host, port, pc_username, pc_password)
+
+    # Create a temporary client handle
+    client = get_nc_multi_client_handle(
+        host,
+        port,
+        nc_host,
+        pc_auth=(pc_username, pc_password),
+        nc_auth=(nc_username, nc_password),
+    )
+
+    # Check if given host is a NC host
+    try:
+        Obj = get_resource_api(
+            "internal/healthz",
+            client.connection.nc_connection,
+            override_connection=True,
+        )
+        _, err = Obj.read(ignore_error=True)
+
+        # successful hit to this api is only possible if NC is supplied as host
+        nc_enabled = err is None
+
+    except Exception:
+        nc_enabled = False
+
+    # If pc host is given, Retrieve NC host
+    if not nc_enabled:
+        # to avoid using old details from config
+        context.update_nc_server_context(nc_enabled, nc_host, nc_username, nc_password)
+        nc_enabled, nc_host = is_nc_enabled(client)
+
+    # use NC FQDN if NCM comes with the NC
+    if nc_enabled:
+        # update the nc_server_config in DSL context to use it for the API routing
+        context.update_nc_server_context(nc_enabled, nc_host, nc_username, nc_password)
+
+        client = get_nc_multi_client_handle(
+            host,
+            port,
+            nc_host,
+            pc_auth=(pc_username, pc_password),
+            nc_auth=(nc_username, nc_password),
+        )
+
+        ncm_host = MULTICONNECT.NC_NCM_SUBDOMAIN + "." + nc_host
+        # update the ncm_server_config in DSL context to use it for the API routing
+        ncm_enabled, _ = is_ncm_enabled(client)
+        context.update_ncm_server_context(ncm_enabled, ncm_host, ncm_port)
+
+    else:
+        # disable nc_server_config in DSL context
+        context.update_nc_server_context(nc_enabled, nc_host, nc_username, nc_password)
+
+        # Get NCM-FQDN using temporary client handle
+        client = get_client_handle_obj(host, port, auth=(pc_username, pc_password))
+        ncm_enabled, ncm_host, ncm_port = _fetch_ncm_decoupled_status(client)
+
+        if ncm_enabled:
+            client = get_multi_client_handle_obj(
+                host, port, ncm_host, ncm_port, auth=(pc_username, pc_password)
+            )
+        # update the ncm_server_config in DSL context to use it for the API routing
+        context.update_ncm_server_context(ncm_enabled, ncm_host, ncm_port)
+
+    return client, nc_enabled, nc_host, ncm_enabled, ncm_host, ncm_port

@@ -11,6 +11,7 @@ from peewee import (
     IntegerField,
 )
 import datetime
+from calm.dsl.api.handle import ClientHandle
 import click
 import arrow
 import json
@@ -18,11 +19,15 @@ import sys
 import re
 from prettytable import PrettyTable
 
-from calm.dsl.api import get_resource_api, get_api_client
+from calm.dsl.api import (
+    get_resource_api,
+    get_api_client,
+    get_user_from_response,
+    get_user_group_from_response,
+)
 from calm.dsl.config import get_context
 from calm.dsl.log import get_logging_handle
-from calm.dsl.constants import CACHE, TUNNEL, GLOBAL_VARIABLE, VARIABLE
-from calm.dsl.api.util import is_policy_check_required
+from calm.dsl.constants import CACHE, TUNNEL, GLOBAL_VARIABLE, VARIABLE, DOMAIN, ROLE
 
 
 LOG = get_logging_handle(__name__)
@@ -34,6 +39,29 @@ dsl_database = SqliteDatabase(None)
 context = get_context()
 ncm_server_config = context.get_ncm_server_config()
 NCM_ENABLED = ncm_server_config.get("ncm_enabled", False)
+
+
+def get_idp_service_name(client: ClientHandle, idp_id: str) -> str:
+    """
+    Returns the name of the Identity Provider service given its ID.
+    Args:
+        client (ClientHandle): The API client handle.
+        idp_id (str): The ID of the Identity Provider.
+    Returns:
+        str: The name of the Identity Provider service.
+    """
+    if not idp_id:
+        LOG.warning("IDP ID is not provided. Returning empty string.")
+        return ""
+
+    directory_service, err = client.directory_service.get(idp_id)
+    if err:
+        LOG.warning(
+            "Cannot fetch directory service with id {}. Error: {}".format(idp_id, err)
+        )
+        return ""
+
+    return directory_service.get("name", "")
 
 
 class BaseModel(Model):
@@ -2281,6 +2309,123 @@ class EnvironmentCache(CacheTableBase):
         primary_key = CompositeKey("name", "uuid")
 
 
+class DirectoryServiceCache(CacheTableBase):
+    __cache_type__ = CACHE.ENTITY.DIRECTORY_SERVICE
+    feature_min_version = "2.7.0"
+    is_policy_required = False
+    name = CharField()
+    uuid = CharField()
+    last_update_time = DateTimeField(default=datetime.datetime.now())
+
+    def get_detail_dict(self, *args, **kwargs):
+        return {
+            "name": self.name,
+            "uuid": self.uuid,
+            "last_update_time": self.last_update_time,
+        }
+
+    @classmethod
+    def clear(cls):
+        """removes entire data from table"""
+        for db_entity in cls.select():
+            db_entity.delete_instance()
+
+    @classmethod
+    def show_data(cls):
+        """display stored data in table"""
+
+        if not len(cls.select()):
+            click.echo(highlight_text("No entry found !!!"))
+            return
+
+        table = PrettyTable()
+        table.field_names = ["NAME", "UUID", "LAST UPDATED"]
+        for entity in cls.select():
+            entity_data = entity.get_detail_dict()
+            last_update_time = arrow.get(
+                entity_data["last_update_time"].astimezone(datetime.timezone.utc)
+            ).humanize()
+            table.add_row(
+                [
+                    highlight_text(entity_data["name"]),
+                    highlight_text(entity_data["uuid"]),
+                    highlight_text(last_update_time),
+                ]
+            )
+        click.echo(table)
+
+    @classmethod
+    def create_entry(cls, name, uuid, **kwargs):
+        super().create(name=name, uuid=uuid)
+
+    @classmethod
+    def sync(cls):
+        """sync the table from server"""
+
+        # clear old data
+        cls.clear()
+
+        client = get_api_client()
+        entities, _ = client.directory_service.list(
+            select="name,extId", ignore_error=False
+        )
+
+        for entity in entities:
+            directory_service = cls._get_directory_service_from_response(entity)
+            cls.create_entry(
+                name=directory_service.get("name"), uuid=directory_service.get("uuid")
+            )
+
+    @classmethod
+    def get_entity_data(cls, name, **kwargs):
+
+        query_obj = {"name": name}
+        try:
+            entity = super().get(**query_obj)
+            return entity.get_detail_dict()
+
+        except DoesNotExist:
+            return dict()
+
+    @classmethod
+    def get_entity_data_using_uuid(cls, uuid, **kwargs):
+        try:
+            entity = super().get(cls.uuid == uuid)
+            return entity.get_detail_dict()
+
+        except DoesNotExist:
+            return dict()
+
+    @classmethod
+    def _get_directory_service_from_response(cls, entity: dict) -> dict:
+        """
+        Returns directory service data from response json
+        Args:
+            entity (dict): directory service entity json response
+        Returns:
+            dict: directory service data with keys: name, uuid
+        """
+        name = entity.get("name")
+        uuid = entity.get("extId")
+
+        if name is None or not uuid:
+            LOG.error(
+                "Invalid directory service data received: name={}, uuid={}".format(
+                    name, uuid
+                )
+            )
+            return {}
+
+        return {
+            "name": name,
+            "uuid": uuid,
+        }
+
+    class Meta:
+        database = dsl_database
+        primary_key = CompositeKey("name", "uuid")
+
+
 class UsersCache(CacheTableBase):
     __cache_type__ = CACHE.ENTITY.USER
     feature_min_version = "2.7.0"
@@ -2360,26 +2505,26 @@ class UsersCache(CacheTableBase):
         cls.clear()
 
         client = get_api_client()
-        entities = client.user.list_all(api_limit=500)
+        entities, err = client.user.list_all(
+            select="username,extId,displayName,idpId,userType", ignore_error=False
+        )
+        if err:
+            raise Exception("[{}] - {}".format(err["code"], err["error"]))
 
         for entity in entities:
+            user = {}
 
-            name = entity["status"]["name"]
-            uuid = entity["metadata"]["uuid"]
-            display_name = entity["status"]["resources"].get("display_name") or ""
-            directory_service_user = (
-                entity["status"]["resources"].get("directory_service_user") or dict()
-            )
-            directory_service_ref = (
-                directory_service_user.get("directory_service_reference") or dict()
-            )
-            directory_service_name = directory_service_ref.get("name", "LOCAL")
+            # get directory service name for external users
+            if entity.get("userType") not in ["LOCAL", "SERVICE_ACCOUNT", "SAML"]:
+                user = get_user_from_response(client, entity)
+
+            directory_service_name = user.get("directory") or "LOCAL"
 
             if directory_service_name:
                 cls.create_entry(
-                    name=name,
-                    uuid=uuid,
-                    display_name=display_name,
+                    name=entity.get("username", ""),
+                    uuid=entity.get("extId", ""),
+                    display_name=entity.get("displayName", ""),
                     directory=directory_service_name,
                 )
 
@@ -2415,28 +2560,27 @@ class UsersCache(CacheTableBase):
     @classmethod
     def fetch_one(cls, uuid):
         """fetches one entity data"""
-
         client = get_api_client()
-        res, err = client.user.read(uuid)
+        entity, err = client.user.read(uuid)
         if err:
             LOG.exception("[{}] - {}".format(err["code"], err["error"]))
             return {}
 
-        entity = res.json()
-        name = entity["status"]["name"]
-        display_name = entity["status"]["resources"].get("display_name") or ""
-        directory_service_user = (
-            entity["status"]["resources"].get("directory_service_user") or dict()
-        )
-        directory_service_ref = (
-            directory_service_user.get("directory_service_reference") or dict()
-        )
-        directory_service_name = directory_service_ref.get("name", "LOCAL")
+        entity = entity.json()
+        entity_data = entity.get("data", {})
+
+        user = {}
+
+        # get directory service name for external users
+        if entity_data.get("userType") not in ["LOCAL", "SERVICE_ACCOUNT", "SAML"]:
+            user = get_user_from_response(client, entity_data)
+
+        directory_service_name = user.get("directory") or "LOCAL"
 
         return {
-            "name": name,
-            "uuid": uuid,
-            "display_name": display_name,
+            "name": entity_data.get("username", ""),
+            "uuid": entity_data.get("extId", ""),
+            "display_name": entity_data.get("displayName", ""),
             "directory": directory_service_name,
         }
 
@@ -2530,16 +2674,13 @@ class RolesCache(CacheTableBase):
         cls.clear()
 
         client = get_api_client()
-        Obj = get_resource_api("roles", client.connection)
-        res, err = Obj.list({"length": 1000})
-        if err:
-            raise Exception("[{}] - {}".format(err["code"], err["error"]))
+        entities, _ = client.role.list_all(
+            select=ROLE.ALL_ATTRIBUTES, ignore_error=False
+        )
 
-        res = res.json()
-        for entity in res["entities"]:
-            name = entity["status"]["name"]
-            uuid = entity["metadata"]["uuid"]
-            cls.create_entry(name=name, uuid=uuid)
+        for entity in entities:
+            role = cls._get_role_from_response(entity)
+            cls.create_entry(name=role.get("name"), uuid=role.get("uuid"))
 
     @classmethod
     def get_entity_data(cls, name, **kwargs):
@@ -2566,15 +2707,12 @@ class RolesCache(CacheTableBase):
         """fetches one entity data"""
 
         client = get_api_client()
-        res, err = client.role.read(uuid)
+        entity, err = client.role.read(uuid)
         if err:
             LOG.exception("[{}] - {}".format(err["code"], err["error"]))
             return {}
 
-        entity = res.json()
-        name = entity["status"]["name"]
-
-        return {"name": name, "uuid": uuid}
+        return cls._get_role_from_response(entity)
 
     @classmethod
     def add_one(cls, uuid, **kwargs):
@@ -2590,98 +2728,28 @@ class RolesCache(CacheTableBase):
         obj = cls.get(cls.uuid == uuid)
         obj.delete_instance()
 
-    class Meta:
-        database = dsl_database
-        primary_key = CompositeKey("name", "uuid")
+    @classmethod
+    def _get_role_from_response(cls, entity: dict) -> dict:
+        """
+        Returns role data from response json
+        Args:
+            entity (dict): role entity json response
+        Returns:
+            dict: role data with keys: name, uuid
+        """
+        name = entity.get(
+            "displayName"
+        )  # is the same as name - entity["status"]["name"]
+        uuid = entity.get("extId")
 
+        if name is None or not uuid:
+            LOG.error("Invalid role data received: name={}, uuid={}".format(name, uuid))
+            return {}
 
-class DirectoryServiceCache(CacheTableBase):
-    __cache_type__ = CACHE.ENTITY.DIRECTORY_SERVICE
-    feature_min_version = "2.7.0"
-    is_policy_required = False
-    name = CharField()
-    uuid = CharField()
-    last_update_time = DateTimeField(default=datetime.datetime.now())
-
-    def get_detail_dict(self, *args, **kwargs):
         return {
-            "name": self.name,
-            "uuid": self.uuid,
-            "last_update_time": self.last_update_time,
+            "name": name,
+            "uuid": uuid,
         }
-
-    @classmethod
-    def clear(cls):
-        """removes entire data from table"""
-        for db_entity in cls.select():
-            db_entity.delete_instance()
-
-    @classmethod
-    def show_data(cls):
-        """display stored data in table"""
-
-        if not len(cls.select()):
-            click.echo(highlight_text("No entry found !!!"))
-            return
-
-        table = PrettyTable()
-        table.field_names = ["NAME", "UUID", "LAST UPDATED"]
-        for entity in cls.select():
-            entity_data = entity.get_detail_dict()
-            last_update_time = arrow.get(
-                entity_data["last_update_time"].astimezone(datetime.timezone.utc)
-            ).humanize()
-            table.add_row(
-                [
-                    highlight_text(entity_data["name"]),
-                    highlight_text(entity_data["uuid"]),
-                    highlight_text(last_update_time),
-                ]
-            )
-        click.echo(table)
-
-    @classmethod
-    def create_entry(cls, name, uuid, **kwargs):
-        super().create(name=name, uuid=uuid)
-
-    @classmethod
-    def sync(cls):
-        """sync the table from server"""
-
-        # clear old data
-        cls.clear()
-
-        client = get_api_client()
-        Obj = get_resource_api("directory_services", client.connection)
-        res, err = Obj.list({"length": 1000})
-        if err:
-            raise Exception("[{}] - {}".format(err["code"], err["error"]))
-
-        res = res.json()
-        for entity in res["entities"]:
-            name = entity["status"]["name"]
-            uuid = entity["metadata"]["uuid"]
-            cls.create_entry(name=name, uuid=uuid)
-
-    @classmethod
-    def get_entity_data(cls, name, **kwargs):
-
-        query_obj = {"name": name}
-        try:
-            entity = super().get(**query_obj)
-            return entity.get_detail_dict()
-
-        except DoesNotExist:
-            return dict()
-
-    @classmethod
-    def get_entity_data_using_uuid(cls, uuid, **kwargs):
-        try:
-            entity = super().get(cls.uuid == uuid)
-            return entity.get_detail_dict()
-
-        except DoesNotExist:
-            return dict()
 
     class Meta:
         database = dsl_database
@@ -2767,38 +2835,20 @@ class UserGroupCache(CacheTableBase):
         cls.clear()
 
         client = get_api_client()
-        Obj = get_resource_api("user_groups", client.connection)
-        res, err = Obj.list({"length": 1000})
-        if err:
-            raise Exception("[{}] - {}".format(err["code"], err["error"]))
+        entities, _ = client.user_group.list(
+            select="distinguishedName,extId,name,idpId", ignore_error=False
+        )
 
-        res = res.json()
-        for entity in res["entities"]:
-            state = entity["status"]["state"]
-            if state != "COMPLETE":
-                continue
+        for entity in entities:
+            user_group = get_user_group_from_response(client, entity)
+            name = user_group.get("name") or user_group.get("display_name", "")
+            directory_service_name = user_group.get("directory")
 
-            e_resources = entity["status"]["resources"]
-
-            directory_service_user_group = (
-                e_resources.get("directory_service_user_group") or dict()
-            )
-            distinguished_name = directory_service_user_group.get("distinguished_name")
-
-            directory_service_ref = (
-                directory_service_user_group.get("directory_service_reference")
-                or dict()
-            )
-            directory_service_name = directory_service_ref.get("name", "")
-
-            display_name = e_resources.get("display_name", "")
-            uuid = entity["metadata"]["uuid"]
-
-            if directory_service_name and distinguished_name:
+            if directory_service_name and name:
                 cls.create_entry(
-                    name=distinguished_name,
-                    uuid=uuid,
-                    display_name=display_name,
+                    name=name,
+                    uuid=user_group.get("uuid"),
+                    display_name=user_group.get("display_name"),
                     directory=directory_service_name,
                 )
 
@@ -2836,33 +2886,12 @@ class UserGroupCache(CacheTableBase):
         """fetches one entity data"""
 
         client = get_api_client()
-        res, err = client.group.read(uuid)
+        entity, err = client.user_group.read(uuid)
         if err:
             LOG.exception("[{}] - {}".format(err["code"], err["error"]))
             return {}
 
-        entity = res.json()
-        e_resources = entity["status"]["resources"]
-
-        directory_service_user_group = (
-            e_resources.get("directory_service_user_group") or dict()
-        )
-        distinguished_name = directory_service_user_group.get("distinguished_name")
-
-        directory_service_ref = (
-            directory_service_user_group.get("directory_service_reference") or dict()
-        )
-        directory_service_name = directory_service_ref.get("name", "")
-
-        display_name = e_resources.get("display_name", "")
-        uuid = entity["metadata"]["uuid"]
-
-        return {
-            "name": distinguished_name,
-            "uuid": uuid,
-            "display_name": display_name,
-            "directory": directory_service_name,
-        }
+        return get_user_group_from_response(client, entity)
 
     @classmethod
     def add_one(cls, uuid, **kwargs):
@@ -2949,8 +2978,7 @@ class AhvNetworkFunctionChain(CacheTableBase):
 
         # update by latest data
         client = get_api_client()
-        Obj = get_resource_api("network_function_chains", client.connection)
-        res, err = Obj.list({"length": 1000})
+        res, err = client.network_function_chains.list({"length": 1000})
         if err:
             raise Exception("[{}] - {}".format(err["code"], err["error"]))
 
@@ -3157,7 +3185,7 @@ class AppProtectionPolicyCache(CacheTableBase):
 class PolicyEventCache(CacheTableBase):
     __cache_type__ = CACHE.ENTITY.POLICY_EVENT
     feature_min_version = "3.5.0"
-    is_policy_required = is_policy_check_required()
+    is_policy_required = True
     is_approval_policy_required = True
     entity_type = CharField()
     name = CharField()
@@ -3267,7 +3295,7 @@ class PolicyEventCache(CacheTableBase):
 class PolicyAttributesCache(CacheTableBase):
     __cache_type__ = CACHE.ENTITY.POLICY_ATTRIBUTES
     feature_min_version = "3.5.0"
-    is_policy_required = is_policy_check_required()
+    is_policy_required = True
     is_approval_policy_required = True
     event_name = CharField()
     name = CharField()
@@ -3381,7 +3409,7 @@ class PolicyAttributesCache(CacheTableBase):
 class PolicyActionTypeCache(CacheTableBase):
     __cache_type__ = CACHE.ENTITY.POLICY_ACTION_TYPE
     feature_min_version = "3.5.0"
-    is_policy_required = is_policy_check_required()
+    is_policy_required = True
     is_approval_policy_required = True
     name = CharField()
     uuid = CharField()
@@ -3478,7 +3506,7 @@ class TunnelCache(CacheTableBase):
 
     __cache_type__ = CACHE.ENTITY.TUNNEL
     feature_min_version = TUNNEL.FEATURE_MIN_VERSION
-    is_policy_required = is_policy_check_required()
+    is_policy_required = True
     name = CharField()
     description = CharField()
     uuid = CharField()
@@ -3674,7 +3702,7 @@ NDB Entities Cache
 class NDB_DatabaseCache(CacheTableBase):
     __cache_type__ = CACHE.NDB + CACHE.KEY_SEPARATOR + CACHE.NDB_ENTITY.DATABASE
     feature_min_version = "3.7.0"
-    is_policy_required = True if not NCM_ENABLED else False
+    is_policy_required = True
     name = CharField()
     uuid = CharField()
     account_name = CharField()
@@ -3857,7 +3885,7 @@ class NDB_DatabaseCache(CacheTableBase):
 class NDB_ProfileCache(CacheTableBase):
     __cache_type__ = CACHE.NDB + CACHE.KEY_SEPARATOR + CACHE.NDB_ENTITY.PROFILE
     feature_min_version = "3.7.0"
-    is_policy_required = True if not NCM_ENABLED else False
+    is_policy_required = True
     name = CharField()
     uuid = CharField()
     account_name = CharField()
@@ -5105,6 +5133,159 @@ class GlobalVariableCache(CacheTableBase):
 
         res = res.json()
         for entity in res.get("entities", []):
+            query_obj = cls._get_dict_for_db_upsert(entity)
+            cls.create_entry(**query_obj)
+
+    @classmethod
+    def get_entity_data(cls, name, **kwargs):
+        query_obj = {"name": name}
+
+        try:
+            # The get() method is shorthand for selecting with a limit of 1
+            # If more than one row is found, the first row returned by the database cursor
+            entity = super().get(**query_obj)
+            return entity.get_detail_dict()
+        except DoesNotExist:
+            return dict()
+
+    @classmethod
+    def get_entity_data_using_uuid(cls, uuid, **kwargs):
+        try:
+            entity = super().get(cls.uuid == uuid)
+            return entity.get_detail_dict()
+
+        except DoesNotExist:
+            return dict()
+
+    class Meta:
+        database = dsl_database
+        primary_key = CompositeKey("name", "uuid")
+
+
+class DomainsCache(CacheTableBase):
+    __cache_type__ = CACHE.ENTITY.DOMAIN
+    feature_min_version = DOMAIN.MIN_SUPPORTED_VERSION
+    is_policy_required = False
+    name = CharField()
+    uuid = CharField()
+    fqdn = CharField()
+    state = CharField()
+    registered_time = CharField()
+    last_update_time = DateTimeField(default=datetime.datetime.now())
+
+    def get_detail_dict(self, *args, **kwargs):
+        return {
+            "name": self.name,
+            "uuid": self.uuid,
+            "fqdn": self.fqdn,
+            "state": self.state,
+            "registered_time": self.registered_time,
+            "last_update_time": self.last_update_time,
+        }
+
+    @classmethod
+    def _get_dict_for_db_upsert(cls, entity):
+        return {
+            "name": entity["name"],
+            "uuid": entity["extId"],
+            "fqdn": entity["fqdn"],
+            "state": entity["registrationState"],
+            "registered_time": entity["registeredTime"],
+        }
+
+    @classmethod
+    def add_one_by_entity_dict(cls, entity):
+        """adds one entry to global variable table"""
+        db_data = cls._get_dict_for_db_upsert(entity)
+        cls.create_entry(**db_data)
+
+    @classmethod
+    def delete_one(cls, uuid, **kwargs):
+        """deletes one global variable entity from cache"""
+        obj = cls.get(cls.uuid == uuid)
+        obj.delete_instance()
+
+    @classmethod
+    def clear(cls):
+        """removes entire data from table"""
+        for db_entity in cls.select():
+            db_entity.delete_instance()
+
+    @classmethod
+    def show_data(cls):
+        """display stored data in table"""
+
+        if not len(cls.select()):
+            click.echo(highlight_text("No entry found !!!"))
+            return
+
+        table = PrettyTable()
+        table.field_names = [
+            "NAME",
+            "UUID",
+            "STATE",
+            "FQDN",
+            "REGISTERED TIME",
+            "LAST UPDATED",
+        ]
+        for entity in cls.select():
+            entity_data = entity.get_detail_dict()
+            last_update_time = arrow.get(
+                entity_data["last_update_time"].astimezone(datetime.timezone.utc)
+            ).humanize()
+            table.add_row(
+                [
+                    highlight_text(entity_data["name"]),
+                    highlight_text(entity_data["uuid"]),
+                    highlight_text(entity_data["state"]),
+                    highlight_text(entity_data["fqdn"]),
+                    highlight_text(entity_data["registered_time"]),
+                    highlight_text(last_update_time),
+                ]
+            )
+        click.echo(table)
+
+    @classmethod
+    def create_entry(cls, name, uuid, **kwargs):
+        fqdn = kwargs.get("fqdn", "")
+        state = kwargs.get("state", "")
+        registered_time = kwargs.get("registered_time", "")
+
+        super().create(
+            name=name,
+            uuid=uuid,
+            fqdn=fqdn,
+            state=state,
+            registered_time=registered_time,
+        )
+
+    @classmethod
+    def sync(cls):
+        """sync the table from server"""
+
+        # clear old data
+        cls.clear()
+
+        client = get_api_client()
+
+        res, err = client.multidomain.get_registered_domains()
+        if err:
+            raise Exception("[{}] - {}".format(err["code"], err["error"]))
+
+        result = json.loads(res.content)
+
+        for entity in result.get("data", []):
+            registered_time_iso = entity["registeredTime"]
+
+            # Try to parse ISO 8601 format and convert to standard UTC format
+            # If not in ISO format or parsing fails, use the original value as-is
+            try:
+                entity["registeredTime"] = arrow.get(registered_time_iso).format(
+                    "YYYY-MM-DD HH:mm:ss ZZZ"
+                )
+            except (arrow.ParserError, ValueError, TypeError):
+                entity["registeredTime"] = registered_time_iso
+
             query_obj = cls._get_dict_for_db_upsert(entity)
             cls.create_entry(**query_obj)
 

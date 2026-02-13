@@ -6,8 +6,8 @@ class GlobalVariableApi(ResourceAPI):
     def __init__(self, connection):
         super().__init__(connection, resource_type="global_variables", calm_api=True)
 
-        self.USAGE = self.PREFIX + "/{}/usage"
-        self.VARIABLE_VALUES = self.PREFIX + "/{}/values"
+        self.USAGE = self.api_base_path + "/{}/usage"
+        self.VARIABLE_VALUES = self.api_base_path + "/{}/values"
 
     def usage(self, id):
         return self.connection._call(

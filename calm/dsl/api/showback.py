@@ -8,5 +8,5 @@ class ShowbackAPI(ResourceAPI):
 
     def status(self):
         return self.connection._call(
-            self.ITEM.format("status"), verify=False, method=REQUEST.METHOD.GET
+            self.item_path.format("status"), verify=False, method=REQUEST.METHOD.GET
         )

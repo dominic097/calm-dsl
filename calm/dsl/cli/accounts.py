@@ -41,6 +41,8 @@ from calm.dsl.store import Cache
 from calm.dsl.constants import CACHE
 from calm.dsl.providers.plugins.gcp_vm.constants import GCP
 from calm.dsl.cli.providers import get_provider_uuid_from_runlog
+from calm.dsl.api.ncm_config_util import is_nc_enabled_by_config
+from calm.dsl.db.table_config import DomainsCache
 
 LOG = get_logging_handle(__name__)
 
@@ -726,10 +728,25 @@ def describe_nutanix_pc_account(provider_data):
     pc_port = provider_data["port"]
     host_pc = provider_data["host_pc"]
     pc_ip = provider_data["server"] if not host_pc else server_config["pc_ip"]
+    pc_uuid = provider_data.get("pc_uuid")
 
     click.echo("Is Host PC: {}".format(highlight_text(host_pc)))
     click.echo("PC IP: {}".format(highlight_text(pc_ip)))
     click.echo("PC Port: {}".format(highlight_text(pc_port)))
+
+    if pc_uuid:
+        domain_cache_data = DomainsCache.get_entity_data_using_uuid(uuid=pc_uuid)
+
+        if not domain_cache_data:
+            LOG.warning("Domain not found in cache for PC UUID: {}".format(pc_uuid))
+        else:
+            click.echo(
+                "Domain Name: {}".format(
+                    highlight_text(domain_cache_data.get("name", ""))
+                )
+            )
+
+        click.echo("PC UUID: {}".format(highlight_text(pc_uuid)))
 
     cluster_list = provider_data["cluster_account_reference_list"]
     if cluster_list:
@@ -745,6 +762,10 @@ def describe_nutanix_pc_account(provider_data):
                 highlight_text(cluster["uuid"]),
             )
         )
+
+        # showback/status api deprecated from NCM2.0+. Hence, not displaying showback or related status for NCM 2.0+.
+        if is_nc_enabled_by_config():
+            return
 
         res, err = client.showback.status()
         if err:
@@ -1005,6 +1026,7 @@ def describe_account(account_name):
     else:
         click.echo("Provider details not present")
 
+    # TODO: This part of code is never reached. Remove it in future.
     if account_type in ["nutanix", "vmware"]:
         res, err = client.showback.status()
         if err:
@@ -1061,6 +1083,8 @@ def verify_account(account_name, watch=False):
         sys.exit("Account verification failed")
 
     response = res.json()
+
+    # TODO: Keep a poll on account/onboarding to see if onboarding succeeds.
     is_async_verify = "runlog_uuid" in response
     if not is_async_verify:
         LOG.info("Account '{}' sucessfully verified".format(account_name))

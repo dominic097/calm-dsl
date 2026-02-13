@@ -9,7 +9,7 @@ class ApprovalAPI(ResourceAPI):
     def update_approval(
         self, uuid, set_uuid, element_uuid, state, spec_version, comment=None
     ):
-        ITEM = self.PREFIX + "/{}/approval_sets/{}/approval_elements/{}"
+        ITEM = self.api_base_path + "/{}/approval_sets/{}/approval_elements/{}"
         payload = {
             "state": state,
             "comment": comment or "",

@@ -5,10 +5,10 @@ import traceback
 from click.testing import CliRunner
 
 from calm.dsl.cli import main as cli
-from calm.dsl.cli.task_commands import watch_task
-from calm.dsl.cli.constants import ERGON_TASK
+from calm.dsl.cli.projects import watch_project_task
 from calm.dsl.builtins import read_local_file
 from calm.dsl.api import get_api_client
+from calm.dsl.constants import PROJECT_TASK
 from calm.dsl.builtins.models.helper.common import get_project
 from calm.dsl.log import get_logging_handle
 
@@ -75,9 +75,16 @@ class TestProjectUpdate:
             pytest.fail("[{}] - {}".format(err["code"], err["error"]))
         else:
             res = res.json()
-            task_state = watch_task(res["status"]["execution_context"]["task_uuid"])
-            if task_state in ERGON_TASK.FAILURE_STATES:
+
+            LOG.info("Polling on project creation task")
+            task_state = watch_project_task(
+                res["metadata"]["uuid"],
+                res["status"]["execution_context"]["task_uuid"],
+                poll_interval=4,
+            )
+            if task_state in PROJECT_TASK.FAILURE_STATES:
                 pytest.fail("Project creation task went to {} state".format(task_state))
+
             LOG.info("Success")
             LOG.debug("Response: {}".format(res))
             LOG.info("PROJECT NAME:{}".format(self.project_name))
@@ -92,9 +99,16 @@ class TestProjectUpdate:
 
         else:
             res = res.json()
-            task_state = watch_task(res["status"]["execution_context"]["task_uuid"])
-            if task_state in ERGON_TASK.FAILURE_STATES:
+
+            LOG.info("Polling on project deletion task")
+            task_state = watch_project_task(
+                self.project_uuid,
+                res["status"]["execution_context"]["task_uuid"],
+                poll_interval=4,
+            )
+            if task_state in PROJECT_TASK.FAILURE_STATES:
                 pytest.fail("Project deletion task went to {} state".format(task_state))
+
             LOG.info("Success")
             LOG.debug("Response: {}".format(res))
 

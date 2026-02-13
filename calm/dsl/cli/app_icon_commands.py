@@ -14,7 +14,7 @@ from .app_icons import create_app_icon, delete_app_icon, get_app_icon_list
 )
 @click.option("--name", "-n", default=None, help="icon name")
 def _create_app_icon(file, name):
-    """Creates a marketplace app icon"""
+    """Creates a NCM store app icon"""
 
     create_app_icon(name, file)
 
@@ -22,7 +22,7 @@ def _create_app_icon(file, name):
 @delete.command("app_icon")
 @click.argument("icon_names", nargs=-1)
 def _delete_app_icon(icon_names):
-    """Deletes a marketplace app icon"""
+    """Deletes a NCM store app icon"""
 
     delete_app_icon(icon_names)
 
@@ -41,7 +41,7 @@ def _delete_app_icon(icon_names):
     "-m",
     is_flag=True,
     default=False,
-    help="Show whether used for marketplace icon or not",
+    help="Show whether used for NCM store icon or not",
 )
 def _get_app_icon_list(name, limit, offset, quiet, marketplace_use):
     """Get the list of app_icons"""

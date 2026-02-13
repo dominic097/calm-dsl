@@ -3,8 +3,8 @@ from ruamel import yaml
 import uuid
 
 from calm.dsl.cli.main import get_api_client
-from calm.dsl.cli.task_commands import watch_task
-from calm.dsl.cli.constants import ERGON_TASK
+from calm.dsl.cli.projects import watch_project_task
+from calm.dsl.constants import PROJECT_TASK
 from calm.dsl.log import get_logging_handle
 from distutils.version import LooseVersion as LV
 from calm.dsl.store import Version
@@ -49,9 +49,16 @@ class TestProjects:
             assert res.ok is True
             res = res.json()
             assert project_name == res["metadata"]["name"]
-            task_state = watch_task(res["status"]["execution_context"]["task_uuid"])
-            if task_state in ERGON_TASK.FAILURE_STATES:
+
+            LOG.info("Polling on project creation task")
+            task_state = watch_project_task(
+                res["metadata"]["uuid"],
+                res["status"]["execution_context"]["task_uuid"],
+                poll_interval=4,
+            )
+            if task_state in PROJECT_TASK.FAILURE_STATES:
                 pytest.fail("Project creation task went to {} state".format(task_state))
+
             LOG.info("Success")
             LOG.debug("Response: {}".format(res))
 
@@ -91,9 +98,17 @@ class TestProjects:
                 assert project_upd_des == res["spec"]["project_detail"]["description"]
             else:
                 assert project_upd_des == res["spec"]["description"]
-            task_state = watch_task(res["status"]["execution_context"]["task_uuid"])
-            if task_state in ERGON_TASK.FAILURE_STATES:
-                pytest.fail("Project creation task went to {} state".format(task_state))
+
+            LOG.info("Polling on project updation task")
+            task_state = watch_project_task(
+                project_uuid,
+                res["status"]["execution_context"]["task_uuid"],
+                poll_interval=4,
+            )
+
+            if task_state in PROJECT_TASK.FAILURE_STATES:
+                pytest.fail("Project updation task went to {} state".format(task_state))
+
             LOG.info("Success")
             LOG.debug("Response: {}".format(res))
 
@@ -106,8 +121,15 @@ class TestProjects:
         else:
             assert res.ok is True
             res = res.json()
-            task_state = watch_task(res["status"]["execution_context"]["task_uuid"])
-            if task_state in ERGON_TASK.FAILURE_STATES:
+
+            LOG.info("Polling on project deletion task")
+            task_state = watch_project_task(
+                project_uuid,
+                res["status"]["execution_context"]["task_uuid"],
+                poll_interval=4,
+            )
+            if task_state in PROJECT_TASK.FAILURE_STATES:
                 pytest.fail("Project deletion task went to {} state".format(task_state))
+
             LOG.info("Success")
             LOG.debug("Response: {}".format(res))

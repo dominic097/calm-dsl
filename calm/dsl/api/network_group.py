@@ -5,11 +5,11 @@ from .connection import REQUEST
 class NetworkGroupAPI(ResourceAPI):
     def __init__(self, connection):
         super().__init__(connection, resource_type="network_groups")
-        self.CREATE_TUNNEL = self.PREFIX + "/tunnels"
-        self.SETUP_TUNNEL = self.PREFIX + "/{}/tunnels"
-        self.RESET_TUNNEL = self.PREFIX + "/{}/tunnels"
+        self.CREATE_TUNNEL = self.api_base_path + "/tunnels"
+        self.SETUP_TUNNEL = self.api_base_path + "/{}/tunnels"
+        self.RESET_TUNNEL = self.api_base_path + "/{}/tunnels"
         self.APP_PENDING_LAUNCH = "api/nutanix/v3/blueprints/{}/pending_launches/{}"
-        self.DELETE_NG_TUNNEL = self.PREFIX + "/{}/tunnels/{}"
+        self.DELETE_NG_TUNNEL = self.api_base_path + "/{}/tunnels/{}"
 
     def create_network_group_tunnel(self, payload):
         return self.connection._call(

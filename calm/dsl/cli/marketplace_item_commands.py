@@ -32,16 +32,16 @@ APP_SOURCES = [
     default="text",
     help="output format",
 )
-@click.option("--version", "-v", default=None, help="Version of marketplace item")
+@click.option("--version", "-v", default=None, help="Version of NCM store item")
 @click.option(
     "--source",
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source for marketplace item",
+    help="App Source for NCM store item",
 )
 def _describe_marketplace_item(name, out, version, source):
-    """Describe a marketplace store item"""
+    """Describe a NCM store store item"""
 
     describe_marketplace_store_item(
         name=name, out=out, version=version, app_source=source
@@ -49,36 +49,36 @@ def _describe_marketplace_item(name, out, version, source):
 
 
 @marketplace_get.command("items")
-@click.option("--name", "-n", default=None, help="Filter by name of marketplace items")
+@click.option("--name", "-n", default=None, help="Filter by name of NCM store items")
 @click.option(
     "--quiet",
     "-q",
     is_flag=True,
     default=False,
-    help="Show only marketplace item names",
+    help="Show only NCM store item names",
 )
 @click.option(
     "--app_family",
     "-f",
     default="All",
-    help="Filter by app family category of marketplace item",
+    help="Filter by app family category of NCM store item",
 )
 @click.option(
     "--display_all",
     "-d",
     is_flag=True,
     default=False,
-    help="Show all marketplace items which are published",
+    help="Show all NCM store items which are published",
 )
 @click.option(
     "--filter",
     "filter_by",
     "-fb",
     default=None,
-    help="Filter marketplace items by this string",
+    help="Filter NCM store items by this string",
 )
 def _get_marketplace_items(name, quiet, app_family, display_all, filter_by):
-    """Get marketplace store items"""
+    """Get NCM store store items"""
 
     get_marketplace_store_items(
         name=name,
@@ -91,7 +91,7 @@ def _get_marketplace_items(name, quiet, app_family, display_all, filter_by):
 
 @marketplace_launch.command("item")
 @click.argument("name")
-@click.option("--version", "-v", default=None, help="Version of marketplace blueprint")
+@click.option("--version", "-v", default=None, help="Version of NCM store blueprint")
 @click.option("--project", "-pj", default=None, help="Project for the application")
 @click.option(
     "--environment", "-e", default=None, help="Environment for the application"
@@ -115,7 +115,7 @@ def _get_marketplace_items(name, quiet, app_family, display_all, filter_by):
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source of marketplace blueprint",
+    help="App Source of NCM store blueprint",
 )
 @click.option("--watch/--no-watch", "-w", default=False, help="Watch scrolling output")
 @click.option(
@@ -146,9 +146,9 @@ def _launch_marketplace_item(
     watch,
     poll_interval,
 ):
-    """Launch a marketplace store item of type blueprint
+    """Launch a NCM store store item of type blueprint
     All runtime variables will be prompted by default. When passing the 'ignore_runtime_variables' flag, no variables will be prompted and all default values will be used.
-    The marketplace-blueprint default values can be overridden by passing a Python file via 'launch_params'. Any variable not defined in the Python file will keep the default
+    The NCM store blueprint default values can be overridden by passing a Python file via 'launch_params'. Any variable not defined in the Python file will keep the default
     value defined in the blueprint. When passing a Python file, no variables will be prompted.
 
     \b
@@ -209,7 +209,7 @@ def _launch_marketplace_item(
 
 @marketplace_run.command("item", feature_min_version="3.2.0")
 @click.argument("name")
-@click.option("--version", "-v", default=None, help="Version of marketplace item")
+@click.option("--version", "-v", default=None, help="Version of NCM store item")
 @click.option("--project", "-pj", default=None, help="Project for the execution")
 @click.option(
     "--ignore_runtime_variables",
@@ -223,13 +223,13 @@ def _launch_marketplace_item(
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source of marketplace item",
+    help="App Source of NCM store item",
 )
 @click.option("--watch/--no-watch", "-w", default=False, help="Watch scrolling output")
 def _run_marketplace_item(
     name, version, project, source, ignore_runtime_variables, watch
 ):
-    """Execute a marketplace item of type runbook"""
+    """Execute a NCM store item of type runbook"""
 
     execute_marketplace_runbook(
         name=name,
@@ -245,17 +245,17 @@ def _run_marketplace_item(
 @marketplace_unpublish.command("item")
 @click.argument("name")
 @click.option(
-    "--version", "-v", required=True, help="Version of marketplace item"
+    "--version", "-v", required=True, help="Version of NCM store item"
 )  # Required to prevent unwanted unpublish of unknown mpi
 @click.option(
     "--source",
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source of marketplace item",
+    help="App Source of NCM store item",
 )
 def _unpublish_marketplace_item(name, version, source):
-    """Unpublish marketplace store item"""
+    """Unpublish NCM store item"""
 
     unpublish_marketplace_item(
         name=name,

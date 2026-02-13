@@ -5,7 +5,12 @@ import traceback
 from click.testing import CliRunner
 
 from calm.dsl.cli import main as cli
-from calm.dsl.api import get_api_client, get_resource_api
+from calm.dsl.api import (
+    get_api_client,
+    get_resource_api,
+    get_user_from_response,
+    get_user_group_from_response,
+)
 from calm.dsl.providers.base import get_provider
 from calm.dsl.config import get_context
 from calm.dsl.constants import STRATOS
@@ -97,9 +102,8 @@ def add_account_details(config):
                         vpc_name, err = get_vpc_name(account_data["UUID"], vpc_ref)
 
                         if err:
-                            raise Exception(
-                                "[{}] - {}".format(err["code"], err["error"])
-                            )
+                            LOG.error("[{}] - {}".format(err["code"], err["error"]))
+                            continue
 
                         account_data["OVERLAY_SUBNETS"].append(
                             {
@@ -124,7 +128,9 @@ def add_account_details(config):
                     )
 
             # If it is local nutanix account, assign it to local nutanix ACCOUNT
-            if a_entity["status"]["resources"]["data"].get("host_pc", False):
+            # if a_entity["status"]["resources"]["data"].get("host_pc", False):
+            # TODO: Remove this once we have a proper way to check if the account is local nutanix account
+            if a_entity["status"]["name"] == "NTNX_LOCAL_AZ":
                 accounts["NTNX_LOCAL_AZ"] = account_data
 
         accounts[account_type].append(account_data)
@@ -139,12 +145,14 @@ def get_vpc_name(account_uuid, vpc_reference):
     AhvObj = AhvVmProvider.get_api_obj()
     vpc_uuid = vpc_reference.get("uuid", "")
     if not vpc_uuid:
+        LOG.warning("VPC UUID is missing for VPC:{}".format(vpc_reference))
         return "", {"code": 404, "error": "VPC UUID is missing"}
     vpc_filter = "(_entity_id_=={})".format(vpc_uuid)
     vpcs = AhvObj.vpcs(
         account_uuid=account_uuid, filter_query=vpc_filter, ignore_failures=True
     )
     if not vpcs:
+        LOG.warning("Failed to query VPCs for VPC:{}".format(vpc_reference))
         return "", {"code": 404, "error": "VPC UUID is missing"}
     vpcs = vpcs.get("entities", [])
     if len(vpcs) == 0:
@@ -158,30 +166,48 @@ def add_directory_service_users(config):
     client = get_api_client()
 
     # Add user details
-    payload = {"length": 250}
-    res, err = client.user.list(payload)
+    # TODO: try cache block is failing to fetch users hence temporarily removed try block
+    try:
+        entities, err = client.user.list_all(
+            select="username,extId,displayName,idpId,userType", total_results=1000
+        )
+
+    except Exception as e:
+        LOG.error(f"Exception occurred while listing users: {e}")
+        return
+
     if err:
-        raise Exception("[{}] - {}".format(err["code"], err["error"]))
+        LOG.error(err)
+        return
 
     # Add user details to config
     ds_users = []
 
-    res = res.json()
-    for entity in res["entities"]:
-        if entity["status"]["state"] != "COMPLETE":
-            continue
-        e_resources = entity["status"]["resources"]
-        if e_resources.get("user_type", "") == "DIRECTORY_SERVICE":
+    for entity in entities:
+        user = get_user_from_response(client, entity)
+        name = user.get("name")
+        uuid = user.get("uuid")
+        display_name = user.get("display_name", "")
+        directory = user.get("directory", "")
+        user_type = user.get("user_type", "")
+
+        if not uuid:
+            LOG.error(
+                "Invalid user data received: name={}, uuid={}, display_name={}, directory={}, user_type={}".format(
+                    name, uuid, display_name, directory, user_type
+                )
+            )
+            return {}
+
+        target_user_type = "LDAP"  # for directory service users iam v4 api has user type as LDAP. Earlier in v3 api for same use: user type was DIRECTORY_SERVICE.
+
+        if user.get("user_type", "") == target_user_type:
             ds_users.append(
                 {
-                    "DISPLAY_NAME": e_resources.get("display_name") or "",
-                    "DIRECTORY": e_resources.get("directory_service_user", {})
-                    .get("directory_service_reference", {})
-                    .get("name", ""),
-                    "NAME": e_resources["directory_service_user"].get(
-                        "user_principal_name", ""
-                    ),
-                    "UUID": entity["metadata"]["uuid"],
+                    "DISPLAY_NAME": user.get("display_name", ""),
+                    "DIRECTORY": user.get("directory", ""),
+                    "NAME": user.get("name"),
+                    "UUID": user.get("uuid"),
                 }
             )
 
@@ -194,34 +220,44 @@ def add_directory_service_user_groups(config):
     client = get_api_client()
 
     # Add user details
-    payload = {"length": 250}
-    res, err = client.group.list(payload)
+    try:
+        entities, err = client.user_group.list_all(
+            select="distinguishedName,extId,name,idpId", total_results=250
+        )
+    except Exception as e:
+        LOG.error(f"Exception occurred while listing users: {e}")
+        return
+
     if err:
-        raise Exception("[{}] - {}".format(err["code"], err["error"]))
+        LOG.error(err)
+        return
 
     # Add user_group details to config
     ds_groups = []
 
-    res = res.json()
-    for entity in res["entities"]:
-        if entity["status"]["state"] != "COMPLETE":
-            continue
-        e_resources = entity["status"]["resources"]
-        directory_service_user_group = (
-            e_resources.get("directory_service_user_group") or dict()
-        )
-        distinguished_name = directory_service_user_group.get("distinguished_name")
-        directory_service_ref = (
-            directory_service_user_group.get("directory_service_reference") or dict()
-        )
-        directory_service_name = directory_service_ref.get("name", "")
-        if directory_service_name and distinguished_name:
+    for entity in entities:
+        user_group = get_user_group_from_response(client, entity)
+        name = user_group.get("name")
+        uuid = user_group.get("uuid")
+        display_name = user_group.get("display_name")
+
+        if not uuid:
+            LOG.error(
+                "Invalid user group data received: distinguished_name={}, uuid={}, display_name={}".format(
+                    name, uuid, display_name
+                )
+            )
+            return {}
+
+        directory_service_name = user_group.get("directory", "")
+
+        if directory_service_name and display_name:
             ds_groups.append(
                 {
-                    "DISPLAY_NAME": e_resources.get("display_name") or "",
+                    "NAME": display_name,
                     "DIRECTORY": directory_service_name,
-                    "NAME": distinguished_name,
-                    "UUID": entity["metadata"]["uuid"],
+                    "DISPLAY_NAME": name,
+                    "UUID": uuid,
                 }
             )
 

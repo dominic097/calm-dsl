@@ -940,7 +940,9 @@ def get_variable_value(variable, bp_data, launch_runtime_vars):
 
     # CASE for `type` in ['SECRET', 'EXEC_SECRET', 'HTTP_SECRET']
     hide_input = variable.get("type").split("_")[-1] == "SECRET"
-    var_default_val = variable["value"].get("value", None)
+    var_default_val = variable["value"].get("value", None) or (
+        choices[0] if len(choices) == 1 else ""
+    )
     new_val = click.prompt(
         "Value for '{}' in {} [{}]".format(
             var_name, var_context, highlight_text(repr(var_default_val))
