@@ -43,6 +43,7 @@ from .constants import RUNBOOK, RUNLOG
 from .runlog import get_completion_func, get_runlog_status
 from .endpoints import get_endpoint
 from .global_variable import fetch_dynamic_global_variable_values
+from .helper.common import url_builder
 
 from anytree import NodeMixin, RenderTree
 
@@ -420,9 +421,11 @@ def create_runbook_command(runbook_file, name, description, force):
     server_config = ContextObj.get_server_config()
     pc_ip = server_config["pc_ip"]
     pc_port = server_config["pc_port"]
-    link = "https://{}:{}/dm/self_service/runbooks/{}".format(
-        pc_ip, pc_port, runbook_uuid
-    )
+
+    url = url_builder(resource="runbooks")
+
+    link = "{}/{}".format(url, runbook_uuid)
+
     stdout_dict = {"name": runbook_name, "link": link, "state": runbook_state}
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))
 
@@ -525,9 +528,11 @@ def update_runbook_command(runbook_file, name, description):
     server_config = ContextObj.get_server_config()
     pc_ip = server_config["pc_ip"]
     pc_port = server_config["pc_port"]
-    link = "https://{}:{}/dm/self_service/runbooks/{}".format(
-        pc_ip, pc_port, runbook_uuid
-    )
+
+    url = url_builder(resource="runbooks")
+
+    link = "{}/{}".format(url, runbook_uuid)
+
     stdout_dict = {"name": runbook_name, "link": link, "state": runbook_state}
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))
 
@@ -871,9 +876,11 @@ def run_runbook(screen, client, runbook_uuid, watch, input_data={}, payload={}):
     server_config = ContextObj.get_server_config()
     pc_ip = server_config["pc_ip"]
     pc_port = server_config["pc_port"]
-    run_url = "https://{}:{}/dm/self_service/runbooks/runlogs/{}".format(
-        pc_ip, pc_port, runlog_uuid
-    )
+
+    url = url_builder(resource="runbooks/runlogs")
+
+    run_url = "{}/{}".format(url, runlog_uuid)
+
     if not watch:
         screen.print_at(
             "Runbook execution url: {}".format(highlight_text(run_url)), 0, 0
@@ -1102,9 +1109,11 @@ def pause_runbook_execution(runlog_uuid):
     server_config = ContextObj.get_server_config()
     pc_ip = server_config["pc_ip"]
     pc_port = server_config["pc_port"]
-    link = "https://{}:{}/dm/self_service/runbooks/runlogs/{}".format(
-        pc_ip, pc_port, runlog_uuid
-    )
+
+    url = url_builder(resource="runbooks/runlogs")
+
+    link = "{}/{}".format(url, runlog_uuid)
+
     stdout_dict = {"link": link, "state": state}
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))
 
@@ -1126,9 +1135,11 @@ def resume_runbook_execution(runlog_uuid):
     server_config = ContextObj.get_server_config()
     pc_ip = server_config["pc_ip"]
     pc_port = server_config["pc_port"]
-    link = "https://{}:{}/dm/self_service/runbooks/runlogs/{}".format(
-        pc_ip, pc_port, runlog_uuid
-    )
+
+    url = url_builder(resource="runbooks/runlogs")
+
+    link = "{}/{}".format(url, runlog_uuid)
+
     stdout_dict = {"link": link, "state": state}
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))
 
@@ -1158,13 +1169,9 @@ def abort_runbook_execution(runlog_uuid, poll_fn=None, abort_fn=None, link=None)
     LOG.info("Abort triggered for the given runbook execution.")
 
     if not link:
-        ContextObj = get_context()
-        server_config = ContextObj.get_server_config()
-        pc_ip = server_config["pc_ip"]
-        pc_port = server_config["pc_port"]
-        link = "https://{}:{}/dm/self_service/runbooks/runlogs/{}".format(
-            pc_ip, pc_port, runlog_uuid
-        )
+        url = url_builder(resource="runbooks/runlogs")
+        link = "{}/{}".format(url, runlog_uuid)
+
     stdout_dict = {"link": link, "state": state}
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))
 

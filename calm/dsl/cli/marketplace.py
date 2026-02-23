@@ -28,6 +28,7 @@ from calm.dsl.log import get_logging_handle
 from calm.dsl.store import Version
 from .constants import MARKETPLACE_ITEM, TASKS
 from calm.dsl.constants import PROVIDER, GLOBAL_VARIABLE
+from calm.dsl.cli.helper.common import url_builder
 
 LOG = get_logging_handle(__name__)
 APP_STATES = [
@@ -2188,14 +2189,9 @@ def execute_marketplace_runbook_renderer(screen, client, watch, payload={}):
         screen.refresh()
         watch_runbook(runlog_uuid, runbook, screen=screen)
 
-    context = get_context()
-    server_config = context.get_server_config()
+    url = url_builder(resource="runbooks/runlogs")
+    run_url = "{}/{}".format(url, runlog_uuid)
 
-    pc_ip = server_config["pc_ip"]
-    pc_port = server_config["pc_port"]
-    run_url = "https://{}:{}/dm/self_service/runbooks/runlogs/{}".format(
-        pc_ip, pc_port, runlog_uuid
-    )
     if not watch:
         screen.print_at(
             "Runbook execution url: {}".format(highlight_text(run_url)), 0, 0

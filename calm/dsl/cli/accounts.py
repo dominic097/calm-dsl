@@ -43,6 +43,7 @@ from calm.dsl.providers.plugins.gcp_vm.constants import GCP
 from calm.dsl.cli.providers import get_provider_uuid_from_runlog
 from calm.dsl.api.ncm_config_util import is_nc_enabled_by_config
 from calm.dsl.db.table_config import DomainsCache
+from calm.dsl.cli.helper.common import url_builder
 
 LOG = get_logging_handle(__name__)
 
@@ -350,17 +351,16 @@ def create_account(client, account_payload, name=None, force_create=False):
         click.echo(".[Done]", err=True)
 
     LOG.info("Account {} created successfully.".format(account_name))
-    context = get_context()
-    server_config = context.get_server_config()
-    pc_ip = server_config["pc_ip"]
-    pc_port = server_config["pc_port"]
-    link = "https://{}:{}/dm/self_service/settings/accounts".format(pc_ip, pc_port)
+
+    link = url_builder(resource="settings/accounts")
+
     stdout_dict = {
         "name": account_name,
         "uuid": account_uuid,
         "link": link,
         "state": account_state,
     }
+
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))
 
     # Sending back all the responses including the res and err to not break automation tests.
@@ -1096,16 +1096,9 @@ def verify_account(account_name, watch=False):
         LOG.debug("Watching on the execution status")
         watch_action_execution(runlog_uuid)
     else:
-        server_config = get_context().get_server_config()
         provider_uuid = get_provider_uuid_from_runlog(client, runlog_uuid)
-        run_url = (
-            "https://{}:{}/dm/self_service/providers/runlogs/{}?entityId={}".format(
-                server_config["pc_ip"],
-                server_config["pc_port"],
-                runlog_uuid,
-                provider_uuid,
-            )
-        )
+        url = url_builder(resource="providers/runlogs")
+        run_url = "{}/{}?entityId={}".format(url, runlog_uuid, provider_uuid)
         LOG.info("Verify action execution url: {}".format(highlight_text(run_url)))
         watch_cmd = "calm watch provider-verify-execution {}".format(runlog_uuid)
         LOG.info("Command to watch the execution: {}".format(highlight_text(watch_cmd)))
@@ -1373,10 +1366,8 @@ def update_account_command(account_file, name, updated_name):
         click.echo(".[Done]", err=True)
 
     LOG.info("Account {} updated successfully.".format(account_name))
-    ContextObj = get_context()
-    server_config = ContextObj.get_server_config()
-    pc_ip = server_config["pc_ip"]
-    pc_port = server_config["pc_port"]
-    link = "https://{}:{}/dm/self_service/settings/accounts".format(pc_ip, pc_port)
+
+    link = url_builder(resource="settings/accounts")
     stdout_dict = {"name": account_name, "link": link, "state": account_state}
+
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))

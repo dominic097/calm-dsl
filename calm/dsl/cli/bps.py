@@ -56,7 +56,7 @@ from calm.dsl.log import get_logging_handle
 from calm.dsl.builtins.models.calm_ref import Ref
 from calm.dsl.decompile.ref_dependency import update_power_action_target_substrate
 from calm.dsl.store.version import Version
-from calm.dsl.cli.helper.common import get_variable_value_options
+from calm.dsl.cli.helper.common import get_variable_value_options, url_builder
 from calm.dsl.constants import GLOBAL_VARIABLE
 
 LOG = get_logging_handle(__name__)
@@ -2133,11 +2133,9 @@ def poll_launch_status(client, blueprint_uuid, launch_req_id):
 
             click.echo("Successfully launched. App uuid is: {}".format(app_uuid))
 
-            LOG.info(
-                "App url: https://{}:{}/dm/self_service/applications/{}".format(
-                    pc_ip, pc_port, app_uuid
-                )
-            )
+            url = url_builder(resource="applications")
+            LOG.info("App url: {}/{}".format(url, app_uuid))
+
             return True
             break
         elif app_state == "failure":

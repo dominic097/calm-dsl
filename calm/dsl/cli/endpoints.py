@@ -21,6 +21,7 @@ from .utils import get_name_query, highlight_text, get_states_filter
 from .constants import ENDPOINT
 from calm.dsl.constants import CACHE
 from calm.dsl.store import Cache
+from calm.dsl.cli.helper.common import url_builder
 
 LOG = get_logging_handle(__name__)
 
@@ -354,14 +355,8 @@ def create_endpoint_command(endpoint_file, name, description, force):
 
     LOG.info("Endpoint {} created successfully.".format(endpoint_name))
 
-    ContextObj = get_context()
-    server_config = ContextObj.get_server_config()
-    pc_ip = server_config["pc_ip"]
-    pc_port = server_config["pc_port"]
-
-    link = "https://{}:{}/dm/self_service/endpoints/{}".format(
-        pc_ip, pc_port, endpoint_uuid
-    )
+    url = url_builder(resource="endpoints")
+    link = "{}/{}".format(url, endpoint_uuid)
 
     stdout_dict = {"name": endpoint_name, "link": link, "state": endpoint_state}
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))

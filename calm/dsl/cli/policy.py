@@ -19,6 +19,7 @@ from calm.dsl.constants import CACHE, POLICY
 from calm.dsl.store import Cache
 from calm.dsl.tools import get_module_from_file
 from .constants import POLICY as CLI_POLICY, APPROVAL_REQUEST
+from .helper.common import url_builder
 
 LOG = get_logging_handle(__name__)
 
@@ -302,9 +303,10 @@ def enable_policy_command(name):
     server_config = ContextObj.get_server_config()
     pc_ip = server_config["pc_ip"]
     pc_port = server_config["pc_port"]
-    link = "https://{}:{}/dm/self_service/policies/approvals/{}".format(
-        pc_ip, pc_port, policy_uuid
-    )
+
+    url = url_builder(resource="policies/approvals")
+    link = "{}/{}".format(url, policy_uuid)
+
     stdout_dict = {"name": policy_name, "link": link, "state": policy_state}
     click.echo(
         json.dumps(stdout_dict, indent=4, separators=(",", ": "), ensure_ascii=False)
@@ -348,14 +350,12 @@ def disable_policy_command(name):
         sys.exit(-1)
 
     LOG.info("Policy {} disabled successfully.".format(policy_name))
-    ContextObj = get_context()
-    server_config = ContextObj.get_server_config()
-    pc_ip = server_config["pc_ip"]
-    pc_port = server_config["pc_port"]
-    link = "https://{}:{}/dm/self_service/policies/approvals/{}".format(
-        pc_ip, pc_port, policy_uuid
-    )
+
+    url = url_builder(resource="policies/approvals")
+    link = "{}/{}".format(url, policy_uuid)
+
     stdout_dict = {"name": policy_name, "link": link, "state": policy_state}
+
     click.echo(
         json.dumps(stdout_dict, indent=4, separators=(",", ": "), ensure_ascii=False)
     )
@@ -408,13 +408,10 @@ def update_policy_command(policy_file, name, description):
         sys.exit(-1)
 
     LOG.info("Policy {} updated successfully.".format(policy_name))
-    ContextObj = get_context()
-    server_config = ContextObj.get_server_config()
-    pc_ip = server_config["pc_ip"]
-    pc_port = server_config["pc_port"]
-    link = "https://{}:{}/dm/self_service/policies/approvals/{}".format(
-        pc_ip, pc_port, policy_uuid
-    )
+
+    url = url_builder(resource="policies/approvals")
+    link = "{}/{}".format(url, policy_uuid)
+
     stdout_dict = {"name": policy_name, "link": link, "state": policy_state}
     click.echo(
         json.dumps(stdout_dict, indent=4, separators=(",", ": "), ensure_ascii=False)
@@ -659,13 +656,10 @@ def create_policy_command(policy_file, name, description, force):
     policy_uuid = policy["metadata"]["uuid"]
     policy_state = policy["status"]["resources"]["state"]
     LOG.info("Policy {} created successfully.".format(policy_name))
-    ContextObj = get_context()
-    server_config = ContextObj.get_server_config()
-    pc_ip = server_config["pc_ip"]
-    pc_port = server_config["pc_port"]
-    link = "https://{}:{}/dm/self_service/policies/approvals/{}".format(
-        pc_ip, pc_port, policy_uuid
-    )
+
+    url = url_builder(resource="policies/approvals")
+    link = "{}/{}".format(url, policy_uuid)
+
     stdout_dict = {"name": policy_name, "link": link, "state": policy_state}
     click.echo(
         json.dumps(stdout_dict, indent=4, separators=(",", ": "), ensure_ascii=False)

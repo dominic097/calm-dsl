@@ -26,7 +26,7 @@ from calm.dsl.builtins.models.calm_ref import Ref
 from calm.dsl.constants import CACHE, DSL_CONFIG, VARIABLE
 from calm.dsl.store import Cache
 from calm.dsl.tools import get_module_from_file
-from calm.dsl.cli.helper.common import get_variable_value_options
+from calm.dsl.cli.helper.common import get_variable_value_options, url_builder
 
 from .utils import (
     get_name_query,
@@ -496,18 +496,16 @@ def display_global_variable_details(response, is_create=False):
         )
 
     LOG.info("Global variable {} {} successfully.".format(global_variable_name, action))
-    ContextObj = get_context()
-    server_config = ContextObj.get_server_config()
-    pc_ip = server_config["pc_ip"]
-    pc_port = server_config["pc_port"]
-    link = "https://{}:{}/dm/self_service/variables/{}".format(
-        pc_ip, pc_port, global_variable_uuid
-    )
+
+    url = url_builder(resource="variables")
+    link = "{}/{}".format(url, global_variable_uuid)
+
     stdout_dict = {
         "name": global_variable_name,
         "link": link,
         "state": global_variable_state,
     }
+
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))
 
 
