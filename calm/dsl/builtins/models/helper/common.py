@@ -1,4 +1,5 @@
 import sys
+import time
 import pytz
 import json
 from dateutil.parser import parse
@@ -9,7 +10,7 @@ from calm.dsl.api import get_api_client
 from calm.dsl.store import Cache
 from calm.dsl.config import get_context
 from calm.dsl.log import get_logging_handle
-from calm.dsl.constants import CACHE, TUNNEL
+from calm.dsl.constants import CACHE, TUNNEL, ACCOUNT
 from calm.dsl.db.table_config import ResourceTypeCache
 from calm.dsl.config.constants import CONFIG
 
@@ -667,3 +668,148 @@ def get_tunnel_cache_from_uuid(uuid, tunnel_kind):
         )
         sys.exit("Invalid {} entity (uuid='')".format(tunnel_kind, uuid))
     return tunnel_cache
+
+
+def poll_account_verification_status(
+    account_name, max_poll_attempts=180, poll_interval=10
+):
+    """
+    Poll account status until it reaches VERIFIED state.
+
+    Args:
+        account_name (str): Name of the account to poll
+        max_poll_attempts (int): Maximum number of polling attempts (default: 180)
+        poll_interval (int): Polling interval in seconds (default: 10 seconds)
+
+    Returns:
+        bool: True if account verification is successful, False otherwise
+    """
+    poll_count = 0
+
+    client = get_api_client()
+
+    TERMINAL_STATES = [
+        ACCOUNT.STATES.VERIFIED,
+        ACCOUNT.STATES.NOT_VERIFIED,
+        ACCOUNT.STATES.VERIFY_FAILED,
+        ACCOUNT.STATES.UNSAVED,
+    ]
+
+    LOG.info("Polling account state until it reaches VERIFIED state")
+
+    while poll_count < max_poll_attempts:
+        try:
+            from calm.dsl.cli.accounts import get_account  # to avoid circular import
+
+            account = get_account(client, account_name)
+            account_type = (
+                account.get("status", {}).get("resources", {}).get("type", "")
+            )
+
+            if account_type != ACCOUNT.TYPE.AHV:
+                LOG.debug(
+                    "Account '{}' is not an AHV account, skipping verification".format(
+                        account_name
+                    )
+                )
+                return True
+
+            account_state = (
+                account.get("status", {}).get("resources", {}).get("state", "")
+            )
+
+            if account_state == ACCOUNT.STATES.VERIFIED:
+                LOG.info(
+                    "Account '{}' successfully reached VERIFIED state".format(
+                        account_name
+                    )
+                )
+                return True
+
+            elif account_state in TERMINAL_STATES:
+                LOG.error(
+                    "Account '{}' went to {} state".format(account_name, account_state)
+                )
+                return False
+
+            LOG.info(
+                "Account state is '{}', waiting {} seconds before next poll.".format(
+                    account_state, poll_interval
+                )
+            )
+            time.sleep(poll_interval)
+            poll_count += 1
+
+        except Exception as e:
+            LOG.error("Error while polling account state: {}".format(str(e)))
+            return False
+
+    if poll_count >= max_poll_attempts:
+        LOG.error(
+            "Account verification polling timed out after {} attempts. Retry verify may resolve it.".format(
+                max_poll_attempts
+            )
+        )
+        return False
+
+
+def poll_onboarding_task_status(workflow_uuid, max_poll_attempts=180, poll_interval=10):
+    """
+    This routine is used to wait for onboarding task to complete
+    Args:
+        workflow_uuid (str): uuid of the workflow to be waited for
+        max_poll_attempts (int): maximum number of polling attempts (default: 180)
+        poll_interval (int): polling interval in seconds (default: 10 seconds)
+    Returns:
+        response (dict): response of the api call
+    """
+    LOG.info(
+        "Waiting for workflow task to complete for workflow uuid: {}".format(
+            workflow_uuid
+        )
+    )
+
+    client = get_api_client()
+    poll_count = 0
+
+    while poll_count < max_poll_attempts:
+        try:
+            res, _ = client.onboarding.get_workflow_status(workflow_uuid)
+            res = res.json()
+            wf_status = res.get("data", {}).get("state", None)
+
+            LOG.debug(
+                "Workflow task - {} is in state: {}".format(workflow_uuid, wf_status)
+            )
+            if wf_status == ACCOUNT.ONBOARDING.WORKFLOW_STATUS.SUCCESS:
+                LOG.info(
+                    "Workflow task - {} completed successfully".format(workflow_uuid)
+                )
+                return True
+
+            LOG.info(
+                "Current status: {}, waiting {} seconds before next poll...".format(
+                    wf_status, poll_interval
+                )
+            )
+            time.sleep(poll_interval)
+            poll_count += 1
+
+        except Exception as e:
+            LOG.error("Error while polling workflow task status: {}".format(str(e)))
+            return False
+
+    if poll_count >= max_poll_attempts:
+        LOG.error(
+            "Workflow task polling timed out after {} attempts.".format(
+                max_poll_attempts
+            )
+        )
+        return False
+
+    LOG.error(
+        "Workflow task - {} did not complete successfully. Last state: {}".format(
+            workflow_uuid, wf_status
+        )
+    )
+    return False

@@ -33,6 +33,10 @@ from .utils import (
     insert_uuid,
     _get_nested_messages,
 )
+from calm.dsl.builtins.models.helper.common import (
+    poll_account_verification_status,
+    poll_onboarding_task_status,
+)
 from calm.dsl.constants import PROVIDER, ACCOUNT, VARIABLE
 from calm.dsl.store import Version
 from calm.dsl.tools import get_module_from_file
@@ -310,6 +314,14 @@ def create_account(client, account_payload, name=None, force_create=False):
     account_status = account.get("status", {})
     account_state = account_status.get("resources", {}).get("state", "DRAFT")
     account_type = account_status.get("resources", {}).get("type", "")
+
+    if is_nc_enabled_by_config():
+        verify_account(account_name)
+        account = get_account(client, account_name)
+        account_status = account.get("status", {})
+        account_state = account["status"]["resources"]["state"]
+        account_type = account_status.get("resources", {}).get("type", "")
+
     LOG.debug("Account {} has state: {}".format(account_name, account_state))
 
     if account_state == "DRAFT":
@@ -611,11 +623,27 @@ def delete_account(account_names):
 
         # Handling case where account type is not custom provider
         if account_type != "custom_provider":
-            _, err = client.account.delete(account_uuid)
+            res, err = client.account.delete(account_uuid)
             if err:
                 LOG.error("Unable to delete Account")
                 sys.exit("Error Code: [{}]".format(err["code"]))
-            LOG.info("Account {} deleted".format(account_name))
+
+            res = res.json()
+
+            if is_nc_enabled_by_config() and account_type == ACCOUNT.TYPE.AHV:
+                onboarding_task_uuid = res.get("onboarding_task_id", None)
+                if onboarding_task_uuid:
+                    LOG.info(
+                        "Offboarding Account {} Triggered with uuid: {}".format(
+                            account_name, onboarding_task_uuid
+                        )
+                    )
+                    is_deleted = poll_onboarding_task_status(onboarding_task_uuid)
+                    if is_deleted:
+                        LOG.info("Account {} deleted".format(account_name))
+
+            else:
+                LOG.info("Account {} deleted".format(account_name))
 
         # Handling case where account type is custom provider
         else:
@@ -1084,11 +1112,21 @@ def verify_account(account_name, watch=False):
 
     response = res.json()
 
-    # TODO: Keep a poll on account/onboarding to see if onboarding succeeds.
     is_async_verify = "runlog_uuid" in response
+
     if not is_async_verify:
-        LOG.info("Account '{}' sucessfully verified".format(account_name))
-        return
+        status = True
+
+        # Keep a poll on account/onboarding to see if onboarding succeeds for NCM2.0+
+        if is_nc_enabled_by_config():
+            status = poll_account_verification_status(account_name)
+
+        if status:
+            LOG.info("Account '{}' sucessfully verified".format(account_name))
+            return
+        else:
+            LOG.info("Account verification failed.")
+            sys.exit("Account verification failed")
 
     LOG.info(response["description"])
     runlog_uuid = response["runlog_uuid"]

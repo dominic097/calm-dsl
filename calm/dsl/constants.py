@@ -185,6 +185,20 @@ class ACCOUNT:
     class SERVICE_ACCOUNT:
         FEATURE_MIN_VERSION = "4.3.0"
 
+    class ONBOARDING:
+        class STATE:
+            ONBOARDING = "ONBOARDING"
+            ERROR = "ERROR"
+            SUCCESS = "SUCCESS"
+            FAILED = "FAILED"
+            RUNNING = "RUNNING"
+            PENDING = "PENDING"
+
+        class WORKFLOW_STATUS:
+            RUNNING = "RUNNING"
+            PENDING = "PENDING"
+            SUCCESS = "SUCCESS"
+
     STANDARD_TYPES = [
         TYPE.AHV,
         TYPE.AHV_PE,
