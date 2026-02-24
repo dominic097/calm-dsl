@@ -315,13 +315,6 @@ def create_account(client, account_payload, name=None, force_create=False):
     account_state = account_status.get("resources", {}).get("state", "DRAFT")
     account_type = account_status.get("resources", {}).get("type", "")
 
-    if is_nc_enabled_by_config():
-        verify_account(account_name)
-        account = get_account(client, account_name)
-        account_status = account.get("status", {})
-        account_state = account["status"]["resources"]["state"]
-        account_type = account_status.get("resources", {}).get("type", "")
-
     LOG.debug("Account {} has state: {}".format(account_name, account_state))
 
     if account_state == "DRAFT":
