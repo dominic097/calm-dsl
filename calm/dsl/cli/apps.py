@@ -894,7 +894,7 @@ def watch_patch_or_action(runlog_uuid, app_name, client, screen, poll_interval=1
     app = _get_app(client, app_name, screen=screen)
     app_uuid = app["metadata"]["uuid"]
 
-    url = client.application.ITEM.format(app_uuid) + "/app_runlogs/list"
+    url = client.application.item_path.format(app_uuid) + "/app_runlogs/list"
     payload = {"filter": "root_reference=={}".format(runlog_uuid)}
 
     def poll_func():
