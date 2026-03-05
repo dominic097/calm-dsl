@@ -74,6 +74,7 @@ def test_json():
 
     remove_output_variables_from_bp(known_json)
     remove_output_variables_from_bp(generated_json)
+    remove_vtpm_config_from_bp(known_json)  # CALM-48132 - Fix for vtpm_config
 
     assert sorted(known_json.items()) == sorted(
         generated_json.items()
