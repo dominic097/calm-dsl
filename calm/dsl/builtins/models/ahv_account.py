@@ -3,7 +3,7 @@ from .entity import EntityType, Entity
 
 from calm.dsl.log import get_logging_handle
 from .validator import PropertyValidator
-from calm.dsl.constants import ENTITY, ACCOUNT
+from calm.dsl.constants import ENTITY, ACCOUNT, DOMAIN
 from calm.dsl.api.ncm_config_util import is_nc_enabled_by_config
 from calm.dsl.store import Cache, Version
 from calm.dsl.db.table_config import DomainsCache
@@ -53,7 +53,10 @@ class AhvAccountType(EntityType):
             else:
                 cdict["cred_type"] = ACCOUNT.CRED_TYPE.BASIC_AUTH
 
-        if is_nc_enabled_by_config():
+        # Set domain for NCM2.0 only. Hence 4.3.1 and NCM enabled , both should be checked to avoid NCM1.5 compatibility issues.
+        if is_nc_enabled_by_config() and LV(calm_version) >= LV(
+            DOMAIN.MIN_SUPPORTED_VERSION
+        ):
             domain_name = cdict.get("domain", None)
             if not domain_name:
                 LOG.error("Domain name is required for NCM 2.0+")

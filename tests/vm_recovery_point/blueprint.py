@@ -9,6 +9,7 @@ from calm.dsl.builtins import Deployment, Profile, Blueprint
 from calm.dsl.builtins import CalmVariable, CalmTask, action
 from calm.dsl.builtins import Ref, Metadata
 from calm.dsl.builtins import AhvVmRecoveryResources, ahv_vm_recovery_spec
+from calm.dsl.builtins import AppProtection
 
 
 CENTOS_KEY = read_local_file(".tests/keys/centos")
@@ -16,8 +17,7 @@ CENTOS_PUBLIC_KEY = read_local_file(".tests/keys/centos_pub")
 
 DSL_CONFIG = json.loads(read_local_file(".tests/config.json"))
 NTNX_LOCAL_ACCOUNT = DSL_CONFIG["ACCOUNTS"]["NTNX_LOCAL_AZ"]
-PROJECT = DSL_CONFIG["PROJECTS"]["PROJECT1"]
-PROJECT_NAME = PROJECT["NAME"]
+PROJECT_NAME = DSL_CONFIG["AHV_SNAPSHOT_PROJECTS"]["PROJECT1"]["NAME"]
 NETWORK1 = DSL_CONFIG["AHV"]["NETWORK"]["VLAN1211"]
 
 VM_RECOVERY_POINT_NAME = read_local_file("vm_rp_name")
@@ -46,10 +46,6 @@ class AhvVmPackage(Package):
 
     foo = CalmVariable.Simple("bar")
     services = [ref(AhvVmService)]
-
-    @action
-    def __install__():
-        CalmTask.Exec.ssh(name="Task1", script="echo @@{foo}@@")
 
 
 # [NumVcpusPerSocket, NumSockets, MemorySizeMb, NicList, GPUList, vm_name] can be overrided
@@ -88,6 +84,11 @@ class AhvVmProfile(Profile):
     foo2 = CalmVariable.Simple("bar2", runtime=True)
 
     deployments = [AhvVmDeployment]
+
+    restore_configs = [AppProtection.RestoreConfig("r1", target=ref(AhvVmDeployment))]
+    snapshot_configs = [
+        AppProtection.SnapshotConfig("s1", restore_config=ref(restore_configs[0]))
+    ]
 
     @action
     def test_profile_action():

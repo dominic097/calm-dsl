@@ -8,6 +8,7 @@ from calm.dsl.builtins import Service, Package, Substrate
 from calm.dsl.builtins import Deployment, Profile, Blueprint
 from calm.dsl.builtins import CalmVariable, CalmTask, action
 from calm.dsl.builtins import Metadata, Ref
+from calm.dsl.builtins import AppProtection
 
 
 CENTOS_KEY = read_local_file(".tests/keys/centos")
@@ -17,7 +18,7 @@ CENTOS_PUBLIC_KEY = read_local_file(".tests/keys/centos_pub")
 DSL_CONFIG = json.loads(read_local_file(".tests/config.json"))
 CENTOS_CI = DSL_CONFIG["AHV"]["IMAGES"]["DISK"]["CENTOS_7_CLOUD_INIT"]
 PROJECT = DSL_CONFIG["PROJECTS"]["PROJECT1"]
-PROJECT_NAME = PROJECT["NAME"]
+PROJECT_NAME = DSL_CONFIG["AHV_SNAPSHOT_PROJECTS"]["PROJECT1"]["NAME"]
 NETWORK1 = DSL_CONFIG["AHV"]["NETWORK"]["VLAN1211"]
 
 Centos = basic_cred("centos", CENTOS_KEY, name="Centos", type="KEY", default=True)
@@ -34,10 +35,6 @@ class AhvVmPackage(Package):
 
     foo = CalmVariable.Simple("bar")
     services = [ref(AhvVmService)]
-
-    @action
-    def __install__():
-        CalmTask.Exec.ssh(name="Task1", script="echo @@{foo}@@")
 
 
 class MyAhvVmResources(AhvVmResources):
@@ -75,7 +72,7 @@ class AhvVmSubstrate(Substrate):
     provider_spec = MyAhvVm
     readiness_probe = readiness_probe(
         connection_type="SSH",
-        disabled=False,
+        disabled=True,
         editables_list=["connection_port", "retries"],
         delay_secs="60",
         retries="5",
@@ -97,6 +94,11 @@ class AhvVmProfile(Profile):
     foo2 = CalmVariable.Simple("bar2", runtime=True)
 
     deployments = [AhvVmDeployment]
+
+    restore_configs = [AppProtection.RestoreConfig("r1", target=ref(AhvVmDeployment))]
+    snapshot_configs = [
+        AppProtection.SnapshotConfig("s1", restore_config=ref(restore_configs[0]))
+    ]
 
     @action
     def test_profile_action():

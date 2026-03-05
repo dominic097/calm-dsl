@@ -2172,6 +2172,7 @@ def create_patched_blueprint(
     org_bp_name = blueprint["metadata"]["name"]
     org_bp_uuid = blueprint["metadata"]["uuid"]
     project_uuid = project_data["metadata"]["uuid"]
+    project_name = project_data["status"]["name"]
     env_uuid = environment_data["metadata"]["uuid"]
 
     new_bp_name = "{}-{}".format(org_bp_name, str(uuid.uuid4())[:8])
@@ -2179,7 +2180,11 @@ def create_patched_blueprint(
         "api_version": "3.0",
         "metadata": {
             "kind": "blueprint",
-            "project_reference": {"kind": "project", "uuid": project_uuid},
+            "project_reference": {
+                "kind": "project",
+                "uuid": project_uuid,
+                "name": project_name,
+            },
         },
         "spec": {
             "environment_profile_pairs": [

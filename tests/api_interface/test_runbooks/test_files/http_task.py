@@ -55,9 +55,11 @@ TEST_URL = "https://{}:9440/".format(pc_ip)
 endpoint = Endpoint.HTTP(
     URL, verify=False, auth=Endpoint.Auth(AUTH_USERNAME, AUTH_PASSWORD)
 )
+
 endpoint_with_tls_verify = Endpoint.HTTP(
-    URL, verify=True, auth=Endpoint.Auth(AUTH_USERNAME, AUTH_PASSWORD)
+    TEST_URL, verify=True, auth=Endpoint.Auth(AUTH_USERNAME, AUTH_PASSWORD)
 )
+
 endpoint_with_incorrect_auth = Endpoint.HTTP(URL, verify=False)
 endpoint_without_auth = Endpoint.HTTP(TEST_URL)
 endpoint_with_multiple_urls = Endpoint.HTTP(
