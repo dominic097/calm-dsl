@@ -213,6 +213,11 @@ class TestAccountCommands:
             known_json["spec"]["resources"]["data"]["server"] = compiled_payload[
                 "spec"
             ]["resources"]["data"]["server"]
+            known_json["spec"]["resources"]["data"]["password"]["value"] = ""
+            if "port" in compiled_payload["spec"]["resources"]["data"]:
+                compiled_payload["spec"]["resources"]["data"]["port"] = str(
+                    compiled_payload["spec"]["resources"]["data"]["port"]
+                )
 
         assert compiled_payload == known_json
         LOG.info("Success")

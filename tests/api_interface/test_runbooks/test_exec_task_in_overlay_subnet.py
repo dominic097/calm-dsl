@@ -24,6 +24,12 @@ CALM_VERSION = Version.get_version("Calm")
     reason="VPC Tunnels can be used in Calm v3.5.0+ or VPC is disabled on the setup",
 )
 class TestExecTasksVMEndpoint:
+    def setup_method(self):
+        """
+        Setting up the VPC project to run the runbooks which have endpoints in overlay subnet"""
+        ContextObj = get_context()
+        ContextObj.update_project_context(project_name="test_vpc_project")
+
     def teardown_method(self):
         ContextObj = get_context()
         ContextObj.reset_configuration()

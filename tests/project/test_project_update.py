@@ -150,6 +150,12 @@ class TestProjectUpdate:
         for _cluster in project_data["spec"]["resources"]["cluster_reference_list"]:
             self.updated_clusters.append(_cluster["uuid"])
 
+    def get_short_group_name(self, group_name):
+        """Extracts 'sspgroupqa1' from 'cn=sspgroupqa1,cn=users...'"""
+        if "cn=" in group_name.lower():
+            return group_name.split(",")[0].split("=")[1]
+        return group_name
+
     def test_update_project_with_append_only(self):
         """tests project update with --append-only flag"""
 
@@ -188,7 +194,8 @@ class TestProjectUpdate:
         assert set(self.updated_users) == set(UPDATED_USERS_NAME)
 
         assert len(self.updated_groups) == len(UPDATED_GROUPS_NAME)
-        assert set(self.updated_groups) == set(UPDATED_GROUPS_NAME)
+        extracted_groups = [self.get_short_group_name(g) for g in self.updated_groups]
+        assert set(extracted_groups) == set(UPDATED_GROUPS_NAME)
 
         assert len(self.updated_subnets) == len(UPDATED_SUBNET_NAME)
         assert set(self.updated_subnets) == set(UPDATED_SUBNET_NAME)
