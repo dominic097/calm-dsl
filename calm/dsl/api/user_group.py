@@ -1,88 +1,45 @@
-from .resource import ResourceAPI
+from calm.dsl.api.iam_v4_resource import IAMV4ResourceAPI
+from .connection import REQUEST
 
 
-class UserGroupAPI(ResourceAPI):
+class UserGroupAPI(IAMV4ResourceAPI):
+    """
+    Resource API for User Groups.
+    """
+
+    _NAME_FIELD = "name"
+
     def __init__(self, connection):
-        super().__init__(connection, resource_type="user_groups")
+        super().__init__(connection, resource_type="user-groups")
 
-    def get_name_uuid_map(self, params=dict()):
+    def create(self, payload):
+        return self.connection._call(
+            self.api_base_path,
+            verify=False,
+            request_json=payload,
+            method=REQUEST.METHOD.POST,
+        )
 
-        res, err = self.list(params)
-        if err:
-            raise Exception("[{}] - {}".format(err["code"], err["error"]))
-        res = res.json()
+    def get_name_uuid_map(self, limit: int = None) -> dict:
+        """
+        Returns a map of user group names to their UUIDs.
+        Args:
+            limit: Optional limit on the number of user groups to return.
+                   If None, all user groups will be returned.
+        Returns:
+            A dictionary mapping user group names to their UUIDs.
+            structure: {name: [uuid1, uuid2, ...]}
+        """
+        return super()._get_name_uuid_map(name_field=self._NAME_FIELD, limit=limit)
 
-        name_uuid_map = {}
-        for entity in res["entities"]:
-            state = entity["status"]["state"]
-            if state != "COMPLETE":
-                continue
-
-            e_resources = entity["status"]["resources"]
-
-            directory_service_user_group = (
-                e_resources.get("directory_service_user_group") or dict()
-            )
-            distinguished_name = directory_service_user_group.get("distinguished_name")
-
-            # For user-groups having caps in the name
-            try:
-                distinguished_name = entity["spec"]["resources"][
-                    "directory_service_user_group"
-                ]["distinguished_name"]
-            except Exception:
-                pass
-
-            directory_service_ref = (
-                directory_service_user_group.get("directory_service_reference")
-                or dict()
-            )
-            directory_service_name = directory_service_ref.get("name", "")
-
-            uuid = entity["metadata"]["uuid"]
-
-            if directory_service_name and distinguished_name:
-                name_uuid_map[distinguished_name] = uuid
-
-        return name_uuid_map
-
-    def get_uuid_name_map(self, params=dict()):
-
-        res, err = self.list(params)
-        if err:
-            raise Exception("[{}] - {}".format(err["code"], err["error"]))
-        res = res.json()
-
-        uuid_name_map = {}
-        for entity in res["entities"]:
-            state = entity["status"]["state"]
-            if state != "COMPLETE":
-                continue
-
-            e_resources = entity["status"]["resources"]
-
-            directory_service_user_group = (
-                e_resources.get("directory_service_user_group") or dict()
-            )
-            distinguished_name = directory_service_user_group.get("distinguished_name")
-
-            # For user-groups having caps in the name
-            try:
-                distinguished_name = entity["spec"]["resources"][
-                    "directory_service_user_group"
-                ]["distinguished_name"]
-            except Exception:
-                pass
-
-            directory_service_ref = (
-                directory_service_user_group.get("directory_service_reference")
-                or dict()
-            )
-            directory_service_name = directory_service_ref.get("name", "")
-
-            uuid = entity["metadata"]["uuid"]
-
-            if directory_service_name and distinguished_name:
-                uuid_name_map[uuid] = distinguished_name
-
-        return uuid_name_map
+    def get_uuid_name_map(self, limit: int = None) -> dict:
+        """
+        Returns a map of user group UUIDs to their names.
+        Args:
+            limit: Optional limit on the number of user groups to return.
+                   If None, all user groups will be returned.
+        Returns:
+            A dictionary mapping user group UUIDs to their names.
+            structure: {uuid: name}
+        """
+        return super()._get_uuid_name_map(name_field=self._NAME_FIELD, limit=limit)

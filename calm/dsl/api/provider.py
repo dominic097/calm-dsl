@@ -14,22 +14,22 @@ class ProviderAPI(ResourceAPI):
     def __init__(self, connection):
         super().__init__(connection, resource_type="providers", calm_api=True)
 
-        self.CREATE = self.PREFIX
+        self.CREATE = self.api_base_path
         self.BULK_CREATE = self.CREATE + "/bulk"
-        self.BULK_UPDATE = self.ITEM + "/bulk"
-        self.BULK_READ = self.ITEM + "/bulk"
-        self.COMPILE = self.ITEM + "/compile"
-        self.TEST_PROVIDER_VERIFY = self.PREFIX + "/{}/actions/{}/test_run"
-        self.ABORT_RUN = self.ITEM + "/runlogs/{}/abort"
-        self.POLL_RUN = self.ITEM + "/runlogs/{}"
-        self.CHILD_RUNLOG_LIST = self.ITEM + "/runlogs/{}/children/list"
-        self.RUNLOG_OUTPUT = self.ITEM + "/runlogs/{}/children/{}/output"
+        self.BULK_UPDATE = self.item_path + "/bulk"
+        self.BULK_READ = self.item_path + "/bulk"
+        self.COMPILE = self.item_path + "/compile"
+        self.TEST_PROVIDER_VERIFY = self.api_base_path + "/{}/actions/{}/test_run"
+        self.ABORT_RUN = self.item_path + "/runlogs/{}/abort"
+        self.POLL_RUN = self.item_path + "/runlogs/{}"
+        self.CHILD_RUNLOG_LIST = self.item_path + "/runlogs/{}/children/list"
+        self.RUNLOG_OUTPUT = self.item_path + "/runlogs/{}/children/{}/output"
         self.RUNLOG_LIST = self.CREATE + "/runlogs/list"
-        self.CLONE = self.ITEM + "/clone"
-        self.IMPORT_JSON = self.PREFIX + "/import_json"
-        self.IMPORT_FILE = self.PREFIX + "/import_file"
-        self.EXPORT_JSON = self.ITEM + "/export_json"
-        self.EXPORT_FILE = self.ITEM + "/export_file"
+        self.CLONE = self.item_path + "/clone"
+        self.IMPORT_JSON = self.api_base_path + "/import_json"
+        self.IMPORT_FILE = self.api_base_path + "/import_file"
+        self.EXPORT_JSON = self.item_path + "/export_json"
+        self.EXPORT_FILE = self.item_path + "/export_file"
 
     def check_if_provider_already_exists(self, provider_name):
         params = {"filter": "name=={};state!=DELETED".format(provider_name)}

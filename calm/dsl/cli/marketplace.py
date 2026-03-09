@@ -28,6 +28,7 @@ from calm.dsl.log import get_logging_handle
 from calm.dsl.store import Version
 from .constants import MARKETPLACE_ITEM, TASKS
 from calm.dsl.constants import PROVIDER, GLOBAL_VARIABLE
+from calm.dsl.cli.helper.common import url_builder
 
 LOG = get_logging_handle(__name__)
 APP_STATES = [
@@ -46,9 +47,27 @@ def get_app_family_list():
     """returns the app family list categories"""
 
     client = get_api_client()
-    Obj = get_resource_api("categories/AppFamily", client.connection)
 
-    res, err = Obj.list(params={})
+    payload = {
+        "filter_criteria": "name==AppFamily;(value!=Nutanix;value!=Preferred_Partners)",
+        "entity_type": "category",
+        "grouping_attribute": "abac_category_key",
+        "group_sort_attribute": "name",
+        "group_count": 64,
+        "group_attributes": [
+            {"attribute": "name", "ancestor_entity_type": "abac_category_key"},
+            {"attribute": "immutable", "ancestor_entity_type": "abac_category_key"},
+        ],
+        "group_member_count": 1000,
+        "group_member_offset": 0,
+        "group_member_sort_attribute": "value",
+        "group_member_attributes": [{"attribute": "value"}],
+        "query_name": "prism:CategoriesQueryModel",
+    }
+
+    # Fetch categories attached to AppFamily category
+    res, err = client.groups.create(payload=payload)
+
     if err:
         LOG.error("[{}] - {}".format(err["code"], err["error"]))
         sys.exit(-1)
@@ -56,8 +75,33 @@ def get_app_family_list():
     res = res.json()
     categories = []
 
-    for entity in res["entities"]:
-        categories.append(entity["value"])
+    if not res.get("group_results", []):
+        return categories
+
+    for entity in res["group_results"][0].get("entity_results", []):
+        """
+        fetch value of category attached to AppFamily category
+        sample response:
+        {
+            "data": [
+                {
+                "data_type": "string",
+                "name": "value",
+                "values": [
+                    {
+                    "time": 1770574934321674,
+                    "values": [
+                        "Backup"
+                    ]
+                    }
+                ]
+                }
+            ],
+            "entity_id": "0e7eee83-4313-5066-bd39-3834ac350f81"
+        }
+        """
+        value = entity["data"][0]["values"][0]["values"][0]
+        categories.append(value)
 
     return categories
 
@@ -103,7 +147,7 @@ def get_mpis_group_call(
     filter_by="",
 ):
     """
-    To call groups() api for marketplace items
+    To call groups() api for NCM store items
     if group_member_count is 0, it will not apply the group_count filter
     """
 
@@ -177,7 +221,7 @@ def get_mpis_group_call(
 def get_marketplace_store_items(
     name, quiet, app_family, display_all, filter_by="", type=None
 ):
-    """Lists marketplace store items"""
+    """Lists NCM store store items"""
 
     group_member_count = 0
     if not display_all:
@@ -339,7 +383,7 @@ def get_mpi_latest_version(name, app_source=None, app_states=[], type=None):
     group_results = res["group_results"]
 
     if not group_results:
-        LOG.error("No Marketplace Item found with name {}".format(name))
+        LOG.error("No NCM store Item found with name {}".format(name))
         sys.exit(-1)
 
     entity_results = group_results[0]["entity_results"]
@@ -360,7 +404,7 @@ def get_mpi_all_versions(name, app_source=None, app_states=[], type=None):
     group_results = res["group_results"]
 
     if not group_results:
-        LOG.error("No Marketplace Item found with name {}".format(name))
+        LOG.error("No NCM store Item found with name {}".format(name))
         sys.exit(-1)
 
     entity_results = group_results[0]["entity_results"]
@@ -372,7 +416,7 @@ def get_mpi_all_versions(name, app_source=None, app_states=[], type=None):
 
 def get_mpi_by_name_n_version(name, version, app_states=[], app_source=None, type=None):
     """
-    It will fetch marketplace item with particular version.
+    It will fetch NCM store item with particular version.
     Special case: As blueprint with state REJECTED and other can coexist with same name and version
     """
 
@@ -400,9 +444,7 @@ def get_mpi_by_name_n_version(name, version, app_states=[], app_source=None, typ
     res = res.json()
     if not res["entities"]:
         LOG.error(
-            "No Marketplace Item found with name {} and version {}".format(
-                name, version
-            )
+            "No NCM store Item found with name {} and version {}".format(name, version)
         )
         sys.exit(-1)
 
@@ -420,7 +462,7 @@ def get_mpi_by_name_n_version(name, version, app_states=[], app_source=None, typ
 def describe_marketplace_store_item(
     name, out, version=None, app_source=None, type=None
 ):
-    """describes the marketplace blueprint related to marketplace item"""
+    """describes the NCM store blueprint related to NCM store item"""
 
     describe_marketplace_item(
         name=name,
@@ -435,19 +477,19 @@ def describe_marketplace_store_item(
 def describe_marketplace_item(
     name, out, version=None, app_source=None, app_state=None, type=None
 ):
-    """describes the marketplace item"""
+    """describes the NCM store item"""
 
     CALM_VERSION = Version.get_version("Calm")
 
     app_states = [app_state] if app_state else []
     if not version:
-        LOG.info("Fetching latest version of Marketplace Item {} ".format(name))
+        LOG.info("Fetching latest version of NCM store Item {} ".format(name))
         version = get_mpi_latest_version(
             name=name, app_source=app_source, app_states=app_states, type=type
         )
         LOG.info(version)
 
-    LOG.info("Fetching details of Marketplace Item {}".format(name))
+    LOG.info("Fetching details of NCM store Item {}".format(name))
     mpi = get_mpi_by_name_n_version(
         name=name,
         version=version,
@@ -462,7 +504,7 @@ def describe_marketplace_item(
         click.echo(json.dumps(blueprint, indent=4, separators=(",", ": ")))
         return
 
-    click.echo("\n----MarketPlace Item Summary----\n")
+    click.echo("\n----NCM store Item Summary----\n")
     click.echo(
         "Name: "
         + highlight_text(name)
@@ -547,12 +589,12 @@ def launch_marketplace_bp(
     poll_interval=10,
 ):
     """
-    Launch marketplace blueprints
+    Launch NCM store blueprints
     If version not there search in published, pendingm, accepted blueprints
     """
 
     if not version:
-        LOG.info("Fetching latest version of Marketplace Blueprint {} ".format(name))
+        LOG.info("Fetching latest version of NCM store Blueprint {} ".format(name))
         version = get_mpi_latest_version(
             name=name,
             app_source=app_source,
@@ -605,10 +647,10 @@ def decompile_marketplace_bp(
     bp_dir,
     no_format=False,
 ):
-    """decompiles marketplace blueprint"""
+    """decompiles NCM store blueprint"""
 
     if not version:
-        LOG.info("Fetching latest version of Marketplace Blueprint {} ".format(name))
+        LOG.info("Fetching latest version of NCM store Blueprint {} ".format(name))
         version = get_mpi_latest_version(
             name=name, app_source=app_source, type=MARKETPLACE_ITEM.TYPES.BLUEPRINT
         )
@@ -636,7 +678,7 @@ def decompile_marketplace_bp(
         bp_dir = os.path.join(os.getcwd(), bp_dir_suffix)
 
     blueprint_description = bp_payload["spec"].get("description", "")
-    LOG.info("Decompiling marketplace blueprint {}".format(name))
+    LOG.info("Decompiling NCM store blueprint {}".format(name))
     for sub_obj in blueprint.get("substrate_definition_list"):
         sub_type = sub_obj.get("type", "") or "AHV_VM"
         if sub_type == "K8S_POD":
@@ -680,7 +722,7 @@ def launch_marketplace_item(
     poll_interval=10,
 ):
     """
-    Launch marketplace items
+    Launch NCM store items
     If version not there search in published blueprints
     """
 
@@ -693,11 +735,11 @@ def launch_marketplace_item(
         }
         mp_item_map = client.market_place.get_name_uuid_map(params=params)
         if not mp_item_map:
-            LOG.error("No marketplace blueprint found with name {}".format(name))
+            LOG.error("No NCM store blueprint found with name {}".format(name))
             sys.exit(-1)
 
     if not version:
-        LOG.info("Fetching latest version of Marketplace Item {} ".format(name))
+        LOG.info("Fetching latest version of NCM store Item {} ".format(name))
         version = get_mpi_latest_version(
             name=name,
             app_source=app_source,
@@ -796,7 +838,7 @@ def convert_mpi_into_blueprint(
         if project_name not in ref_projects:
             LOG.debug("Associated Projects: {}".format(ref_projects))
             LOG.error(
-                "Project {} is not shared with marketplace item {} with version {}".format(
+                "Project {} is not shared with NCM store item {} with version {}".format(
                     project_name, name, version
                 )
             )
@@ -817,6 +859,10 @@ def convert_mpi_into_blueprint(
         "categories": mpi_data["metadata"].get("categories", {}),
     }
     bp_spec["api_version"] = "3.0"
+    bp_spec["spec"]["source_marketplace_name"] = name
+
+    if version:
+        bp_spec["spec"]["source_marketplace_version"] = version
 
     LOG.info("Creating MPI blueprint")
     bp_res, err = client.blueprint.marketplace_launch(bp_spec)
@@ -879,7 +925,7 @@ def publish_bp_to_marketplace_manager(
     bp_status = bp_data["status"]["state"]
     if bp_status != "ACTIVE":
         LOG.error(
-            "Blueprint is in {} state. Unable to publish it to marketplace manager".format(
+            "Blueprint is in {} state. Unable to publish it to NCM store manager".format(
                 bp_status
             )
         )
@@ -966,7 +1012,7 @@ def publish_bp_to_marketplace_manager(
         LOG.error("[{}] - {}".format(err["code"], err["error"]))
         sys.exit(-1)
 
-    LOG.info("Marketplace Blueprint is published to marketplace manager successfully")
+    LOG.info("Marketplace Blueprint is published to NCM store manager successfully")
 
 
 def publish_bp_as_new_marketplace_bp(
@@ -987,7 +1033,7 @@ def publish_bp_as_new_marketplace_bp(
 
     # Search whether this marketplace item exists or not
     LOG.info(
-        "Fetching existing marketplace blueprints with name {}".format(
+        "Fetching existing NCM store blueprints with name {}".format(
             marketplace_bp_name
         )
     )
@@ -1001,7 +1047,7 @@ def publish_bp_as_new_marketplace_bp(
 
     if group_count:
         LOG.error(
-            "A local marketplace item exists with same name ({}) in another app family".format(
+            "A local NCM store item exists with same name ({}) in another app family".format(
                 marketplace_bp_name
             )
         )
@@ -1059,7 +1105,7 @@ def publish_bp_as_existing_marketplace_bp(
 ):
 
     LOG.info(
-        "Fetching existing marketplace blueprints with name {}".format(
+        "Fetching existing NCM store blueprints with name {}".format(
             marketplace_bp_name
         )
     )
@@ -1072,7 +1118,7 @@ def publish_bp_as_existing_marketplace_bp(
     group_results = res["group_results"]
     if not group_results:
         LOG.error(
-            "No local marketplace blueprint exists with name {}".format(
+            "No local NCM store blueprint exists with name {}".format(
                 marketplace_bp_name
             )
         )
@@ -1084,7 +1130,7 @@ def publish_bp_as_existing_marketplace_bp(
     # Search whether given version of marketplace items already exists or not
     # Rejected MPIs with same name and version can exist
     LOG.info(
-        "Fetching existing versions of Marketplace Item {}".format(marketplace_bp_name)
+        "Fetching existing versions of NCM store Item {}".format(marketplace_bp_name)
     )
     res = get_mpis_group_call(
         app_group_uuid=app_group_uuid,
@@ -1168,7 +1214,7 @@ def approve_marketplace_item(
     client = get_api_client()
     if not version:
         # Search for pending items, Only those items can be approved
-        LOG.info("Fetching latest version of Marketplace Item {} ".format(name))
+        LOG.info("Fetching latest version of NCM store Item {} ".format(name))
         version = get_mpi_latest_version(
             name=name,
             app_states=[MARKETPLACE_ITEM.STATES.PENDING],
@@ -1177,7 +1223,7 @@ def approve_marketplace_item(
         LOG.info(version)
 
     LOG.info(
-        "Fetching details of pending marketplace item {} with version {}".format(
+        "Fetching details of pending NCM store item {} with version {}".format(
             name, version
         )
     )
@@ -1256,7 +1302,7 @@ def approve_marketplace_item(
             # Validating the project association with MPI
             if not project_valid:
                 LOG.error(
-                    "Project {} is not associated to Marketplace Item {}".format(
+                    "Project {} is not associated to NCM store Item {}".format(
                         _project, name
                     )
                 )
@@ -1271,7 +1317,7 @@ def approve_marketplace_item(
         sys.exit(-1)
 
     LOG.info(
-        "Marketplace Item {} with version {} is approved successfully".format(
+        "NCM store Item {} with version {} is approved successfully".format(
             name, version
         )
     )
@@ -1290,9 +1336,7 @@ def publish_marketplace_item(
     client = get_api_client()
     if not version:
         # Search for accepted items, only those items can be published
-        LOG.info(
-            "Fetching latest version of accepted Marketplace Item {} ".format(name)
-        )
+        LOG.info("Fetching latest version of accepted NCM store Item {} ".format(name))
         version = get_mpi_latest_version(
             name=name,
             app_states=[MARKETPLACE_ITEM.STATES.ACCEPTED],
@@ -1302,7 +1346,7 @@ def publish_marketplace_item(
         LOG.info(version)
 
     LOG.info(
-        "Fetching details of accepted marketplace item {} with version {}".format(
+        "Fetching details of accepted NCM store item {} with version {}".format(
             name, version
         )
     )
@@ -1325,7 +1369,7 @@ def publish_marketplace_item(
         ]
         if item_status != "ACTIVE":
             LOG.error(
-                "Item is in {} state. Unable to publish it to marketplace".format(
+                "Item is in {} state. Unable to publish it to NCM store".format(
                     item_status
                 )
             )
@@ -1375,7 +1419,7 @@ def publish_marketplace_item(
 
     # Atleast 1 project required for publishing to marketplace
     if not item_data["spec"]["resources"].get("project_reference_list", None):
-        LOG.error("To publish to the Marketplace, please provide a project first.")
+        LOG.error("To publish to the NCM store, please provide a project first.")
         sys.exit(-1)
 
     item_data["spec"]["resources"].pop("global_variable_list", None)
@@ -1385,7 +1429,7 @@ def publish_marketplace_item(
         LOG.error("[{}] - {}".format(err["code"], err["error"]))
         sys.exit(-1)
 
-    LOG.info("Marketplace Item is published to marketplace successfully")
+    LOG.info("NCM store Item is published to NCM store successfully")
 
 
 def update_marketplace_item(
@@ -1399,14 +1443,14 @@ def update_marketplace_item(
     type=None,
 ):
     """
-    updates the marketplace item
+    updates the NCM store item
     version is required to prevent unwanted update of another mpi
     """
 
     client = get_api_client()
 
     LOG.info(
-        "Fetching details of marketplace item {} with version {}".format(name, version)
+        "Fetching details of NCM store item {} with version {}".format(name, version)
     )
     mpi_data = get_mpi_by_name_n_version(
         name=name,
@@ -1480,7 +1524,7 @@ def update_marketplace_item(
         sys.exit(-1)
 
     LOG.info(
-        "Marketplace Item {} with version {} is updated successfully".format(
+        "NCM store Item {} with version {} is updated successfully".format(
             name, version
         )
     )
@@ -1511,7 +1555,7 @@ def delete_marketplace_item(
     )
 
     LOG.info(
-        "Fetching details of unpublished marketplace item {} with version {}".format(
+        "Fetching details of unpublished NCM store item {} with version {}".format(
             name, version
         )
     )
@@ -1531,7 +1575,7 @@ def delete_marketplace_item(
         sys.exit(-1)
 
     LOG.info(
-        "Marketplace Item {} with version {} is deleted successfully".format(
+        "NCM store Item {} with version {} is deleted successfully".format(
             name, version
         )
     )
@@ -1542,7 +1586,7 @@ def reject_marketplace_item(name, version, type=None):
     client = get_api_client()
     if not version:
         # Search for pending items, Only those items can be rejected
-        LOG.info("Fetching latest version of pending Marketplace Item {} ".format(name))
+        LOG.info("Fetching latest version of pending NCM store Item {} ".format(name))
         version = get_mpi_latest_version(
             name=name,
             app_states=[MARKETPLACE_ITEM.STATES.PENDING],
@@ -1552,7 +1596,7 @@ def reject_marketplace_item(name, version, type=None):
 
     # Pending BP will always of type LOCAL, so no need to apply that filter
     LOG.info(
-        "Fetching details of pending marketplace item {} with version {}".format(
+        "Fetching details of pending NCM store item {} with version {}".format(
             name, version
         )
     )
@@ -1581,7 +1625,7 @@ def reject_marketplace_item(name, version, type=None):
         sys.exit(-1)
 
     LOG.info(
-        "Marketplace Item {} with version {} is rejected successfully".format(
+        "NCM store Item {} with version {} is rejected successfully".format(
             name, version
         )
     )
@@ -1607,9 +1651,7 @@ def unpublish_marketplace_item(
         LOG.info(versions)
     elif not version and not all_versions:
         # Search for published items, only those can be unpublished
-        LOG.info(
-            "Fetching latest version of published Marketplace Item {} ".format(name)
-        )
+        LOG.info("Fetching latest version of published NCM store Item {} ".format(name))
         version = get_mpi_latest_version(
             name=name,
             app_states=[MARKETPLACE_ITEM.STATES.PUBLISHED],
@@ -1620,7 +1662,7 @@ def unpublish_marketplace_item(
 
     for version in versions:
         LOG.info(
-            "Fetching details of published marketplace item {} with version {}".format(
+            "Fetching details of published NCM store item {} with version {}".format(
                 name, version
             )
         )
@@ -1689,7 +1731,7 @@ def unpublish_marketplace_item(
             "from projects {}".format(", ".join(projects)) if projects else ""
         )
         LOG.info(
-            "Marketplace Item {} with version {} is unpublished successfully {}".format(
+            "NCM store Item {} with version {} is unpublished successfully {}".format(
                 name, version, additional_log
             )
         )
@@ -1698,13 +1740,11 @@ def unpublish_marketplace_item(
 def unpublish_marketplace_bp(
     name, version, app_source=None, projects=None, all_versions=None
 ):
-    """unpublishes marketplace blueprint"""
+    """unpublishes NCM store blueprint"""
 
     if not version:
         # Search for published blueprints, only those can be unpublished
-        LOG.info(
-            "Fetching latest version of published Marketplace Item {} ".format(name)
-        )
+        LOG.info("Fetching latest version of published NCM store Item {} ".format(name))
         version = get_mpi_latest_version(
             name=name,
             app_states=[MARKETPLACE_ITEM.STATES.PUBLISHED],
@@ -1714,7 +1754,7 @@ def unpublish_marketplace_bp(
         LOG.info(version)
 
     LOG.info(
-        "Fetching details of published marketplace blueprint {} with version {}".format(
+        "Fetching details of published NCM store blueprint {} with version {}".format(
             name, version
         )
     )
@@ -1733,7 +1773,7 @@ def unpublish_marketplace_bp(
 
     if item_type != "blueprint":
         LOG.error(
-            "Marketplace blueprint {} with version {} not found".format(name, version)
+            "NCM store blueprint {} with version {} not found".format(name, version)
         )
         sys.exit(-1)
     version = None if all_versions else version
@@ -1842,7 +1882,7 @@ def publish_runbook_to_marketplace_manager(
         LOG.error("[{}] - {}".format(err["code"], err["error"]))
         sys.exit(-1)
 
-    LOG.info("Marketplace Runbook is published to marketplace manager successfully")
+    LOG.info("NCM store Runbook is published to NCM store manager successfully")
 
 
 def publish_runbook_as_new_marketplace_item(
@@ -1863,7 +1903,7 @@ def publish_runbook_as_new_marketplace_item(
 
     # Search whether this marketplace item exists or not
     LOG.info(
-        "Fetching existing marketplace runbooks with name {}".format(
+        "Fetching existing NCM store runbooks with name {}".format(
             marketplace_item_name
         )
     )
@@ -1876,7 +1916,7 @@ def publish_runbook_as_new_marketplace_item(
 
     if group_count:
         LOG.error(
-            "A local marketplace item exists with same name ({}) in another app family".format(
+            "A local NCM store item exists with same name ({}) in another app family".format(
                 marketplace_item_name
             )
         )
@@ -1934,7 +1974,7 @@ def publish_runbook_as_existing_marketplace_item(
 ):
 
     LOG.info(
-        "Fetching existing marketplace runbooks with name {}".format(
+        "Fetching existing NCM store runbooks with name {}".format(
             marketplace_item_name
         )
     )
@@ -1946,7 +1986,7 @@ def publish_runbook_as_existing_marketplace_item(
     group_results = res["group_results"]
     if not group_results:
         LOG.error(
-            "No local marketplace runbook exists with name {}".format(
+            "No local NCM store runbook exists with name {}".format(
                 marketplace_item_name
             )
         )
@@ -1958,9 +1998,7 @@ def publish_runbook_as_existing_marketplace_item(
     # Search whether given version of marketplace items already exists or not
     # Rejected MPIs with same name and version can exist
     LOG.info(
-        "Fetching existing versions of Marketplace Item {}".format(
-            marketplace_item_name
-        )
+        "Fetching existing versions of NCM store Item {}".format(marketplace_item_name)
     )
     res = get_mpis_group_call(
         app_group_uuid=app_group_uuid,
@@ -2041,7 +2079,7 @@ def execute_marketplace_runbook(
     app_states=[],
 ):
     """
-    Execute marketplace runbooks
+    Execute NCM store runbooks
     If version not there search in published, pending, accepted runbooks
     """
 
@@ -2051,7 +2089,7 @@ def execute_marketplace_runbook(
     }
     mp_item_map = client.market_place.get_name_uuid_map(params=params)
     if not mp_item_map:
-        LOG.error("No marketplace runbook found with name {}".format(name))
+        LOG.error("No NCM store runbook found with name {}".format(name))
         sys.exit(-1)
 
     if not app_states:
@@ -2062,7 +2100,7 @@ def execute_marketplace_runbook(
         ]
 
     if not version:
-        LOG.info("Fetching latest version of Marketplace Runbook {} ".format(name))
+        LOG.info("Fetching latest version of NCM store Runbook {} ".format(name))
         version = get_mpi_latest_version(
             name=name,
             app_source=app_source,
@@ -2092,7 +2130,7 @@ def execute_marketplace_runbook(
 
     mpi_type = mpi_data["status"]["resources"]["type"]
     if mpi_type != MARKETPLACE_ITEM.TYPES.RUNBOOK:
-        LOG.error("Selected marketplace item is not of type runbook")
+        LOG.error("Selected NCM store item is not of type runbook")
         return
 
     mpi_uuid = mpi_data["metadata"]["uuid"]
@@ -2151,14 +2189,9 @@ def execute_marketplace_runbook_renderer(screen, client, watch, payload={}):
         screen.refresh()
         watch_runbook(runlog_uuid, runbook, screen=screen)
 
-    context = get_context()
-    server_config = context.get_server_config()
+    url = url_builder(resource="runbooks/runlogs")
+    run_url = "{}/{}".format(url, runlog_uuid)
 
-    pc_ip = server_config["pc_ip"]
-    pc_port = server_config["pc_port"]
-    run_url = "https://{}:{}/dm/self_service/runbooks/runlogs/{}".format(
-        pc_ip, pc_port, runlog_uuid
-    )
     if not watch:
         screen.print_at(
             "Runbook execution url: {}".format(highlight_text(run_url)), 0, 0
@@ -2174,7 +2207,7 @@ def patch_rb_endpoints_and_accounts(client, mpi_data, payload):
         # No patching of endpoints required as runbook is published with endpoints
         return payload
 
-    default_target = input("Default target for execution of Marketplace Runbook:")
+    default_target = input("Default target for execution of NCM store Runbook:")
 
     if default_target:
         endpoint = get_endpoint(client, default_target)
@@ -2210,7 +2243,7 @@ def patch_rb_endpoints_and_accounts(client, mpi_data, payload):
 
     if used_endpoints:
         LOG.info(
-            "Please select an endpoint belonging to the selected project for every endpoint used in the marketplace\
+            "Please select an endpoint belonging to the selected project for every endpoint used in the NCM store\
               /item."
         )
     endpoints_mapping = {}
@@ -2224,7 +2257,7 @@ def patch_rb_endpoints_and_accounts(client, mpi_data, payload):
 
     if used_accounts:
         LOG.info(
-            "Please select an account belonging to the selected project for every account used in the marketplace item."
+            "Please select an account belonging to the selected project for every account used in the NCM store item."
         )
         used_accounts = list(set(used_accounts))
     accounts_mapping = {}
@@ -2358,7 +2391,7 @@ def set_field_to_null(data, key_to_set_null):
 
 def _remove_platform_spec_data(bp_spec):
     """
-    Removes platform spec data from blueprint spec before publishing to marketplace manager.
+    Removes platform spec data from blueprint spec before publishing to NCM store manager.
 
     Args:
         bp_spec (dict): Blueprint spec data

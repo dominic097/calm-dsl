@@ -33,6 +33,10 @@ from .utils import (
     insert_uuid,
     _get_nested_messages,
 )
+from calm.dsl.builtins.models.helper.common import (
+    poll_account_verification_status,
+    poll_onboarding_task_status,
+)
 from calm.dsl.constants import PROVIDER, ACCOUNT, VARIABLE
 from calm.dsl.store import Version
 from calm.dsl.tools import get_module_from_file
@@ -41,6 +45,9 @@ from calm.dsl.store import Cache
 from calm.dsl.constants import CACHE
 from calm.dsl.providers.plugins.gcp_vm.constants import GCP
 from calm.dsl.cli.providers import get_provider_uuid_from_runlog
+from calm.dsl.api.ncm_config_util import is_nc_enabled_by_config
+from calm.dsl.db.table_config import DomainsCache
+from calm.dsl.cli.helper.common import url_builder
 
 LOG = get_logging_handle(__name__)
 
@@ -307,6 +314,7 @@ def create_account(client, account_payload, name=None, force_create=False):
     account_status = account.get("status", {})
     account_state = account_status.get("resources", {}).get("state", "DRAFT")
     account_type = account_status.get("resources", {}).get("type", "")
+
     LOG.debug("Account {} has state: {}".format(account_name, account_state))
 
     if account_state == "DRAFT":
@@ -348,17 +356,16 @@ def create_account(client, account_payload, name=None, force_create=False):
         click.echo(".[Done]", err=True)
 
     LOG.info("Account {} created successfully.".format(account_name))
-    context = get_context()
-    server_config = context.get_server_config()
-    pc_ip = server_config["pc_ip"]
-    pc_port = server_config["pc_port"]
-    link = "https://{}:{}/dm/self_service/settings/accounts".format(pc_ip, pc_port)
+
+    link = url_builder(resource="settings/accounts")
+
     stdout_dict = {
         "name": account_name,
         "uuid": account_uuid,
         "link": link,
         "state": account_state,
     }
+
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))
 
     # Sending back all the responses including the res and err to not break automation tests.
@@ -609,11 +616,27 @@ def delete_account(account_names):
 
         # Handling case where account type is not custom provider
         if account_type != "custom_provider":
-            _, err = client.account.delete(account_uuid)
+            res, err = client.account.delete(account_uuid)
             if err:
                 LOG.error("Unable to delete Account")
                 sys.exit("Error Code: [{}]".format(err["code"]))
-            LOG.info("Account {} deleted".format(account_name))
+
+            res = res.json()
+
+            if is_nc_enabled_by_config() and account_type == ACCOUNT.TYPE.AHV:
+                onboarding_task_uuid = res.get("onboarding_task_id", None)
+                if onboarding_task_uuid:
+                    LOG.info(
+                        "Offboarding Account {} Triggered with uuid: {}".format(
+                            account_name, onboarding_task_uuid
+                        )
+                    )
+                    is_deleted = poll_onboarding_task_status(onboarding_task_uuid)
+                    if is_deleted:
+                        LOG.info("Account {} deleted".format(account_name))
+
+            else:
+                LOG.info("Account {} deleted".format(account_name))
 
         # Handling case where account type is custom provider
         else:
@@ -726,10 +749,25 @@ def describe_nutanix_pc_account(provider_data):
     pc_port = provider_data["port"]
     host_pc = provider_data["host_pc"]
     pc_ip = provider_data["server"] if not host_pc else server_config["pc_ip"]
+    pc_uuid = provider_data.get("pc_uuid")
 
     click.echo("Is Host PC: {}".format(highlight_text(host_pc)))
     click.echo("PC IP: {}".format(highlight_text(pc_ip)))
     click.echo("PC Port: {}".format(highlight_text(pc_port)))
+
+    if pc_uuid:
+        domain_cache_data = DomainsCache.get_entity_data_using_uuid(uuid=pc_uuid)
+
+        if not domain_cache_data:
+            LOG.warning("Domain not found in cache for PC UUID: {}".format(pc_uuid))
+        else:
+            click.echo(
+                "Domain Name: {}".format(
+                    highlight_text(domain_cache_data.get("name", ""))
+                )
+            )
+
+        click.echo("PC UUID: {}".format(highlight_text(pc_uuid)))
 
     cluster_list = provider_data["cluster_account_reference_list"]
     if cluster_list:
@@ -745,6 +783,10 @@ def describe_nutanix_pc_account(provider_data):
                 highlight_text(cluster["uuid"]),
             )
         )
+
+        # showback/status api deprecated from NCM2.0+. Hence, not displaying showback or related status for NCM 2.0+.
+        if is_nc_enabled_by_config():
+            return
 
         res, err = client.showback.status()
         if err:
@@ -1005,6 +1047,7 @@ def describe_account(account_name):
     else:
         click.echo("Provider details not present")
 
+    # TODO: This part of code is never reached. Remove it in future.
     if account_type in ["nutanix", "vmware"]:
         res, err = client.showback.status()
         if err:
@@ -1061,10 +1104,22 @@ def verify_account(account_name, watch=False):
         sys.exit("Account verification failed")
 
     response = res.json()
+
     is_async_verify = "runlog_uuid" in response
+
     if not is_async_verify:
-        LOG.info("Account '{}' sucessfully verified".format(account_name))
-        return
+        status = True
+
+        # Keep a poll on account/onboarding to see if onboarding succeeds for NCM2.0+
+        if is_nc_enabled_by_config():
+            status = poll_account_verification_status(account_name)
+
+        if status:
+            LOG.info("Account '{}' sucessfully verified".format(account_name))
+            return
+        else:
+            LOG.info("Account verification failed.")
+            sys.exit("Account verification failed")
 
     LOG.info(response["description"])
     runlog_uuid = response["runlog_uuid"]
@@ -1072,16 +1127,9 @@ def verify_account(account_name, watch=False):
         LOG.debug("Watching on the execution status")
         watch_action_execution(runlog_uuid)
     else:
-        server_config = get_context().get_server_config()
         provider_uuid = get_provider_uuid_from_runlog(client, runlog_uuid)
-        run_url = (
-            "https://{}:{}/dm/self_service/providers/runlogs/{}?entityId={}".format(
-                server_config["pc_ip"],
-                server_config["pc_port"],
-                runlog_uuid,
-                provider_uuid,
-            )
-        )
+        url = url_builder(resource="providers/runlogs")
+        run_url = "{}/{}?entityId={}".format(url, runlog_uuid, provider_uuid)
         LOG.info("Verify action execution url: {}".format(highlight_text(run_url)))
         watch_cmd = "calm watch provider-verify-execution {}".format(runlog_uuid)
         LOG.info("Command to watch the execution: {}".format(highlight_text(watch_cmd)))
@@ -1349,10 +1397,8 @@ def update_account_command(account_file, name, updated_name):
         click.echo(".[Done]", err=True)
 
     LOG.info("Account {} updated successfully.".format(account_name))
-    ContextObj = get_context()
-    server_config = ContextObj.get_server_config()
-    pc_ip = server_config["pc_ip"]
-    pc_port = server_config["pc_port"]
-    link = "https://{}:{}/dm/self_service/settings/accounts".format(pc_ip, pc_port)
+
+    link = url_builder(resource="settings/accounts")
     stdout_dict = {"name": account_name, "link": link, "state": account_state}
+
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))

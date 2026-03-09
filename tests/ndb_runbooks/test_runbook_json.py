@@ -11,7 +11,6 @@ from calm.dsl.runbooks import runbook_json
 from calm.dsl.builtins.models.utils import read_local_file
 from calm.dsl.constants import STRATOS
 from calm.dsl.config import get_context
-from calm.dsl.api.util import is_policy_check_required
 from tests.helper.global_variables_helper import remove_global_variables_from_spec
 from tests.helper.execution_name_helper import remove_execution_name_from_spec
 
@@ -99,10 +98,8 @@ def get_runbook_action_map():
     return RUNBOOK_ACTION_MAP
 
 
-# if ncm is enabled on smsp (opt-in), then no need to check policy status and run these tests
-# if ncm sits in PC (opt-out), then skip tests if policy is disabled.
 @pytest.mark.skipif(
-    is_policy_check_required() and not get_policy_status(),
+    not get_policy_status(),
     reason="Policy is not enabled, so skipping the test",
 )
 @pytest.mark.parametrize(

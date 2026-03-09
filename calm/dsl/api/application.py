@@ -6,14 +6,14 @@ class ApplicationAPI(ResourceAPI):
     def __init__(self, connection):
         super().__init__(connection, resource_type="apps")
 
-        self.ACTION_RUN = self.ITEM + "/actions/{}/run"
-        self.PATCH_RUN = self.ITEM + "/patch/{}/run"
-        self.DOWNLOAD_RUNLOG = self.ITEM + "/app_runlogs/{}/output/download"
-        self.ACTION_VARIABLE = self.ITEM + "/actions/{}/variables"
-        self.RECOVERY_GROUPS_LIST = self.ITEM + "/recovery_groups/list"
-        self.BLUEPRINTS_ORIGINAL = self.ITEM + "/blueprints/original"
+        self.ACTION_RUN = self.item_path + "/actions/{}/run"
+        self.PATCH_RUN = self.item_path + "/patch/{}/run"
+        self.DOWNLOAD_RUNLOG = self.item_path + "/app_runlogs/{}/output/download"
+        self.ACTION_VARIABLE = self.item_path + "/actions/{}/variables"
+        self.RECOVERY_GROUPS_LIST = self.item_path + "/recovery_groups/list"
+        self.BLUEPRINTS_ORIGINAL = self.item_path + "/blueprints/original"
         self.BLUEPRINT_ENTITIES_ESCRIPT_UPDATE = (
-            self.ITEM + "/blueprints/entities/update"
+            self.item_path + "/blueprints/entities/update"
         )
 
     def run_action(self, app_id, action_id, payload):
@@ -58,7 +58,7 @@ class ApplicationAPI(ResourceAPI):
             )
 
     def delete(self, app_id, soft_delete=False):
-        delete_url = self.ITEM.format(app_id)
+        delete_url = self.item_path.format(app_id)
         if soft_delete:
             delete_url += "?type=soft"
         return self.connection._call(

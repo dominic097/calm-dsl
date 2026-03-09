@@ -33,5 +33,6 @@ class Kubernetes:
             resource_type="kubernetes/v1/karbon/clusters",
             connection=self.connection,
         )
+
         Obj.ROOT = "api/calm/v3.0.a1"
         return Obj.list(params=params)

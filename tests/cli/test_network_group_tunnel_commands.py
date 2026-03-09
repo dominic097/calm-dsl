@@ -193,6 +193,9 @@ class TestNetworkGroupTunnelCommands:
             pytest.fail("NetworkGroupTunnel delete call failed")
         LOG.info("Success")
 
+    @pytest.mark.skip(
+        reason="ENG-780563 - Tunnel vpc_name_1_tunnel already exists from VPC Setup"
+    )
     def test_crud_network_group_tunnel(self):
 
         # Create operation

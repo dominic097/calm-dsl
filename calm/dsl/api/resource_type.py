@@ -5,12 +5,12 @@ from .connection import REQUEST
 class ResourceTypeAPI(ResourceAPI):
     def __init__(self, connection):
         super().__init__(connection, resource_type="resource_types", calm_api=True)
-        self.CREATE = self.PREFIX
-        self.LIST = self.PREFIX + "/list"
-        self.TEST_RUNBOOK = self.PREFIX + "/{}/test_runbook/{}/run"
-        self.PLATFORM_LIST = self.PREFIX + "/platform_list"
-        self.UPDATE = self.PREFIX + "/{}"
-        self.TEST_EXECUTE = self.PREFIX + "/{}/actions/{}/test_run"
+        self.CREATE = self.api_base_path
+        self.LIST = self.api_base_path + "/list"
+        self.TEST_RUNBOOK = self.api_base_path + "/{}/test_runbook/{}/run"
+        self.PLATFORM_LIST = self.api_base_path + "/platform_list"
+        self.UPDATE = self.api_base_path + "/{}"
+        self.TEST_EXECUTE = self.api_base_path + "/{}/actions/{}/test_run"
 
     def create(self, resource_type_payload):
         return self.connection._call(

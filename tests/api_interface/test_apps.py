@@ -156,7 +156,7 @@ class TestApps:
             response = res.json()
             runlog_uuid = response["status"]["runlog_uuid"]
 
-            url = client.application.ITEM.format(app_uuid) + "/app_runlogs/list"
+            url = client.application.item_path.format(app_uuid) + "/app_runlogs/list"
             payload = {"filter": "root_reference=={}".format(runlog_uuid)}
 
             maxWait = 5 * 60

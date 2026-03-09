@@ -30,6 +30,7 @@ from .providers import (
     decompile_provider,
     format_provider_file,
 )
+from .helper.common import url_builder
 
 LOG = get_logging_handle(__name__)
 
@@ -178,19 +179,16 @@ def _create_provider(
 
     LOG.info("Provider {} created successfully.".format(provider_name))
 
-    context = get_context()
-    server_config = context.get_server_config()
-    pc_ip = server_config["pc_ip"]
-    pc_port = server_config["pc_port"]
-    link = "https://{}:{}/dm/self_service/providers/{}".format(
-        pc_ip, pc_port, provider_uuid
-    )
+    url = url_builder(resource="providers")
+    link = "{}/{}".format(url, provider_uuid)
+
     stdout_dict = {
         "name": provider_name,
         "uuid": provider_uuid,
         "link": link,
         "state": provider_state,
     }
+
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))
 
 

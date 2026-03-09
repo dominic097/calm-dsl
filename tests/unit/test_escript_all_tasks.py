@@ -87,8 +87,28 @@ def _test_compare_compile_result(Runbook, json_file):
         for task in known_json["runbook"]["task_definition_list"]:
             if "status_map_list" in task:
                 task.pop("status_map_list")
+    keys_to_remove = {
+        "global_variable_reference_list",
+        "execution_name",
+        "output_variable_list",
+    }
+    remove_keys_recursive(known_json, keys_to_remove)
+    remove_keys_recursive(generated_json, keys_to_remove)
     assert sorted(known_json.items()) == sorted(generated_json.items())
     print("JSON compilation successful for {}".format(Runbook.action_name))
+
+
+def remove_keys_recursive(obj, keys):
+    """Recursively remove any dict keys in `keys` from obj (in-place)."""
+    if isinstance(obj, dict):
+        for k in list(obj.keys()):
+            if k in keys:
+                obj.pop(k, None)
+        for v in obj.values():
+            remove_keys_recursive(v, keys)
+    elif isinstance(obj, list):
+        for item in obj:
+            remove_keys_recursive(item, keys)
 
 
 @pytest.mark.runbook

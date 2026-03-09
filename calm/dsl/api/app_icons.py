@@ -5,8 +5,8 @@ from .connection import REQUEST
 class AppIconAPI(ResourceAPI):
     def __init__(self, connection):
         super().__init__(connection, resource_type="app_icons")
-        self.UPLOAD = self.PREFIX + "/upload"
-        self.IS_MARKETPLACE_ICON = self.PREFIX + "/{}/" + "is_marketplaceicon"
+        self.UPLOAD = self.api_base_path + "/upload"
+        self.IS_MARKETPLACE_ICON = self.api_base_path + "/{}/" + "is_marketplaceicon"
 
     def upload(self, icon_name, file_path):
         data = {"name": icon_name}

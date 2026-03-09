@@ -18,7 +18,7 @@ from calm.dsl.builtins import (
     Ref,
 )
 
-from calm.dsl.constants import CACHE, VARIABLE, ACCOUNT
+from calm.dsl.constants import CACHE, VARIABLE, ACCOUNT, DOMAIN
 from calm.dsl.store import Cache
 from calm.dsl.store.version import Version
 from calm.dsl.builtins.models.helper.common import is_not_right_ref
@@ -38,6 +38,7 @@ class AccountResources:
             server=None,
             port=None,
             service_account_api_key=None,
+            domain=None,
         ):
 
             kwargs = {}
@@ -45,7 +46,7 @@ class AccountResources:
             if server is not None:
                 kwargs["server"] = server
             if port is not None:
-                kwargs["port"] = str(port)
+                kwargs["port"] = int(port) if not isinstance(port, int) else port
             if username is not None:
                 kwargs["username"] = username
             if password is not None:
@@ -56,6 +57,12 @@ class AccountResources:
             if LV(calm_version) >= LV(ACCOUNT.SERVICE_ACCOUNT.FEATURE_MIN_VERSION):
                 if service_account_api_key is not None:
                     kwargs["service_account"] = service_account_api_key
+
+            # Only pass domain if the version of Calm >= 4.3.1
+            if LV(calm_version) >= LV(DOMAIN.MIN_SUPPORTED_VERSION):
+                if domain is not None:
+                    kwargs["domain"] = domain
+
             return ahv_account(**kwargs)
 
     class Aws:

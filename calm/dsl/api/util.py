@@ -11,7 +11,7 @@ from calm.dsl.log import get_logging_handle
 from calm.dsl.config import get_context
 from calm.dsl.constants import DSL_CONFIG, MARKETPLACE, MULTICONNECT, FLAGS
 from calm.dsl.api.resource import get_resource_api
-from calm.dsl.api.connection import MultiConnection
+from calm.dsl.api.connection import MultiConnection, NCMultiConnection
 
 LOG = get_logging_handle(__name__)
 
@@ -1117,6 +1117,49 @@ def strip_uuids(upload_payload):
             strip_uuids(item)
 
 
+def is_nc_enabled(client):
+    """
+    Checks if NC is enabled for the given client.
+    Args:
+        client (object): The client object which contains the connection information.
+    Returns:
+        bool: True if NC is enabled, False otherwise.
+    """
+    nc_enabled = False
+    nc_fqdn = None
+
+    Obj = get_resource_api(
+        "dm/v3/groups",
+        client.connection.pc_connection,
+        dm_api=True,
+    )
+
+    payload = deepcopy(MARKETPLACE.FETCH_APP_DETAILS_PAYLOAD)
+
+    payload["filter"] += ";app_name=={}".format(MARKETPLACE.APP_NAME.NC)
+
+    try:
+        res, err = Obj.create(payload, ignore_error=True)
+        if err:
+            click.echo("[Fail]")
+            LOG.error("[{}] - {}".format(err["code"], err["error"]))
+            return False, None
+    except Exception as e:
+        LOG.error("Error while fetching NC enablement: {}".format(e))
+        return nc_enabled, nc_fqdn
+
+    result = json.loads(res.content)
+
+    for group in result.get("group_results", []):
+        for entity in group.get("entity_results", []):
+            nc_url = entity.get("app_url")
+            nc_fqdn, _ = fetch_host_port_from_url(nc_url)
+            nc_enabled = True
+            return nc_enabled, nc_fqdn
+
+    return nc_enabled, nc_fqdn
+
+
 def is_ncm_enabled(client):
     """
     Checks if NCM is enabled for the given client.
@@ -1134,14 +1177,41 @@ def is_ncm_enabled(client):
     if isinstance(client.connection, MultiConnection):
         try:
             Obj = get_resource_api(
-                "groups", getattr(client.connection, MULTICONNECT.PC_OBJ), dm_api=True
+                "dm/v3/groups",
+                getattr(client.connection, MULTICONNECT.PC_OBJ),
+                dm_api=True,
             )
         except Exception as e:
             LOG.error("Error while fetching NCM enablement: {}".format(e))
             return ncm_enabled, ncm_url
+
+    elif isinstance(client.connection, NCMultiConnection):
+        try:
+            applications, err = client.multidomain.get_applications()
+            if err:
+                LOG.error("Failed to get applications")
+                click.echo("[Fail]")
+                sys.exit(err["error"])
+
+            applications = applications.json().get("data", [])
+
+            for _app in applications:
+                # This app is present only when NCM is deployed on SMSP
+                if _app.get("displayName") == MARKETPLACE.APP_NAME.NCM_CENTRAL_PROJECT:
+                    ncm_enabled = True
+                    break
+
+            LOG.info("NCM is enabled") if ncm_enabled else LOG.info("NCM is disabled")
+
+            return ncm_enabled, ncm_url
+
+        except Exception as e:
+            LOG.error("Error while fetching NCM enablement: {}".format(e))
+            return ncm_enabled, ncm_url
+
     else:
         try:
-            Obj = get_resource_api("groups", client.connection, dm_api=True)
+            Obj = get_resource_api("dm/v3/groups", client.connection, dm_api=True)
         except Exception as e:
             LOG.error("Error while fetching NCM enablement: {}".format(e))
             return ncm_enabled, ncm_url
@@ -1212,7 +1282,7 @@ def replace_host_port_in_url(url, new_host, new_port=None):
         old_port = parsed_url.port
 
         # if host and port are None, return the original URL
-        if not (new_host and new_port):
+        if not new_host and not new_port:
             LOG.debug(
                 "Returning original URL: {} as host: {} port: {}".format(
                     url, new_host, new_port
@@ -1226,7 +1296,10 @@ def replace_host_port_in_url(url, new_host, new_port=None):
         # if port is given then update the netloc with port
         if new_port:
             updated_netloc += f":{new_port}"
-        else:
+        elif new_port == "":
+            # do nothing, allow having an empty port, i.e. URL without port
+            pass
+        else:  # port is None, use the old port
             updated_netloc += f":{old_port}"
 
         # Construct the updated URL
@@ -1241,18 +1314,3 @@ def replace_host_port_in_url(url, new_host, new_port=None):
             )
         )
         sys.exit("Error while replacing host and port in URL: {}".format(url))
-
-
-def is_policy_check_required():
-    """This helper returns whether policy enablement check is required for a setup"""
-
-    context = get_context()
-    ncm_server_config = context.get_ncm_server_config()
-    NCM_ENABLED = ncm_server_config.get("ncm_enabled", False)
-
-    if NCM_ENABLED:
-        if FLAGS.POLICY_ON_SMSP:
-            return False
-        else:
-            return True
-    return True

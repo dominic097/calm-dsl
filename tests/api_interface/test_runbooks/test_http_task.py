@@ -2,7 +2,8 @@ import pytest
 import uuid
 import json
 
-from calm.dsl.cli.main import get_api_client
+# from calm.dsl.cli.main import get_api_client
+from calm.dsl.api import get_api_client
 from calm.dsl.cli.constants import RUNLOG
 from tests.api_interface.test_runbooks.test_files.http_task import (
     get_http_task_runbook,

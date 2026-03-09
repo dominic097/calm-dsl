@@ -3,7 +3,6 @@ import json
 import uuid
 import traceback
 from distutils.version import LooseVersion as LV
-from calm.dsl.api.util import is_policy_check_required
 from click.testing import CliRunner
 
 from calm.dsl.cli import main as cli
@@ -19,11 +18,8 @@ DSL_CONFIG = json.loads(read_local_file(".tests/config.json"))
 CALM_VERSION = Version.get_version("Calm")
 
 
-# if ncm is enabled on smsp (opt-in), then no need to check policy status and run these tests
-# if ncm sits in PC (opt-out), then skip tests if policy is disabled.
 @pytest.mark.skipif(
-    (is_policy_check_required() and not get_policy_status())
-    or LV(CALM_VERSION) < LV("4.3.0"),
+    not get_policy_status() or LV(CALM_VERSION) < LV("4.3.0"),
     reason="Policy is not enabled or Calm version is < 4.3.0, so skipping the test",
 )
 class TestTunnelCommands:

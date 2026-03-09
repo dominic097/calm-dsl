@@ -18,7 +18,13 @@ properties:
   server:
     type: string
   port:
+    type: integer
+  domain:
     type: string
+    x-calm-dsl-min-version: 4.3.1
+  pc_uuid:
+    type: string
+    x-calm-dsl-min-version: 4.3.1
 
 {%- endmacro %}
 {% macro AhvAccountSchema() -%}

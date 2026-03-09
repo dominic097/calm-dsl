@@ -3,6 +3,8 @@ import time
 
 from calm.dsl.api import get_api_client
 from calm.dsl.log import get_logging_handle
+from calm.dsl.config import get_context
+from calm.dsl.api.ncm_config_util import is_nc_enabled_by_config
 
 LOG = get_logging_handle(__name__)
 
@@ -58,3 +60,19 @@ def get_variable_value_options(
 
     LOG.error("Waited for 5 minutes for dynamic variable evaludation")
     sys.exit(-1)
+
+
+def url_builder(resource):
+    """builds url for the resource"""
+
+    context = get_context()
+
+    if is_nc_enabled_by_config():
+        nc_server_config = context.get_nc_server_config()
+        nc_host = nc_server_config.get("host", None)
+        return "https://{}/services/self_service/{}".format(nc_host, resource)
+    else:
+        server_config = context.get_server_config()
+        pc_ip = server_config["pc_ip"]
+        pc_port = server_config["pc_port"]
+        return "https://{}:{}/dm/self_service/{}".format(pc_ip, pc_port, resource)

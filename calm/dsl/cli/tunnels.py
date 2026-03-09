@@ -18,6 +18,7 @@ from .utils import (
     highlight_text,
     get_states_filter,
 )
+from .helper.common import url_builder
 
 LOG = get_logging_handle(__name__)
 
@@ -399,14 +400,8 @@ def create_tunnel(name="", description="", no_cache_update=False):
 
     LOG.info("Tunnel {} created successfully.".format(tunnel_name))
 
-    ContextObj = get_context()
-    server_config = ContextObj.get_server_config()
-    pc_ip = server_config["pc_ip"]
-    pc_port = server_config["pc_port"]
-
-    link = "https://{}:{}/dm/self_service/settings/tunnels/{}".format(
-        pc_ip, pc_port, tunnel_uuid
-    )
+    url = url_builder(resource="settings/tunnels")
+    link = "{}/{}".format(url, tunnel_uuid)
 
     stdout_dict = {
         "name": tunnel_name,
@@ -480,14 +475,8 @@ def update_tunnel(name, new_name="", description="", no_cache_update=False):
 
     LOG.info("Tunnel {} updated successfully.".format(tunnel_name))
 
-    ContextObj = get_context()
-    server_config = ContextObj.get_server_config()
-    pc_ip = server_config["pc_ip"]
-    pc_port = server_config["pc_port"]
-
-    link = "https://{}:{}/dm/self_service/settings/tunnels/{}".format(
-        pc_ip, pc_port, tunnel_uuid
-    )
+    url = url_builder(resource="settings/tunnels")
+    link = "{}/{}".format(url, tunnel_uuid)
 
     stdout_dict = {
         "name": tunnel_name,

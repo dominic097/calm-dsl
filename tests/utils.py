@@ -13,6 +13,7 @@ from calm.dsl.api import get_client_handle_obj
 from calm.dsl.api.connection import REQUEST
 from calm.dsl.cli.main import get_api_client
 from calm.dsl.config import get_context
+from calm.dsl.config.constants import CONFIG
 from calm.dsl.api.util import replace_host_port_in_url
 
 VPC_TUNNEL_NAME = "vpc_name_1"
@@ -150,7 +151,7 @@ class Application:
             runlog_uuid = response["status"]["runlog_uuid"]
             LOG.info(f"Runlog uuid of custom action triggered {runlog_uuid}")
 
-            url = client.application.ITEM.format(app_uuid) + "/app_runlogs/list"
+            url = client.application.item_path.format(app_uuid) + "/app_runlogs/list"
             payload = {"filter": "root_reference=={}".format(runlog_uuid)}
 
             maxWait = 5 * 60
@@ -504,14 +505,16 @@ def verify_platform_sync_task(account_name, timeout=180):
 
 
 def replace_host_port_in_tests_url(url):
-    ContextObj = get_context()
-    ncm_server_config = ContextObj.get_ncm_server_config()
+    context = get_context()
 
+    ncm_server_config = context.get_ncm_server_config()
     # update host and port in url with NCM host and port if NCM is enabled
-    if ncm_server_config.get("ncm_enabled", False):
-        ncm_host = ncm_server_config.get("host", None)
-        ncm_port = ncm_server_config.get("port", None)
-        url = replace_host_port_in_url(url, ncm_host, ncm_port)
+    if ncm_server_config.get(CONFIG.NCM_SERVER.NCM_ENABLED, False):
+        ncm_host = ncm_server_config.get(CONFIG.NCM_SERVER.HOST, None)
+        ncm_port = ncm_server_config.get(CONFIG.NCM_SERVER.PORT, None)
+        ncm_port = "" if ncm_port == "None" else ncm_port
+
+        return replace_host_port_in_url(url, ncm_host, ncm_port)
 
     return url
 

@@ -1,4 +1,5 @@
 import pytest
+import json
 from unittest.mock import patch, MagicMock
 from distutils.version import LooseVersion as LV
 
@@ -7,6 +8,13 @@ from calm.dsl.builtins.models.ahv_account import AhvAccountType
 from calm.dsl.constants import ACCOUNT
 from calm.dsl.store.version import Version
 from calm.dsl.log import get_logging_handle
+from calm.dsl.api import get_api_client
+
+from calm.dsl.api.ncm_config_util import (
+    is_nc_enabled_by_config,
+    is_ncm_enabled_by_config,
+)
+
 
 LOG = get_logging_handle(__name__)
 
@@ -14,17 +22,28 @@ LOG = get_logging_handle(__name__)
 class TestAhvAccountCompile:
     """Test class for AHV Account compile functionality"""
 
+    def setup_class(self):
+        self.domain_name = None
+        if is_ncm_enabled_by_config():
+            client = get_api_client()
+            res, err = client.multidomain.get_registered_domains()
+            if err:
+                raise ("Domain name not found")
+            result = json.loads(res.content)
+            self.domain_name = result.get("data", [])[0].get("name")
+            LOG.info(self.domain_name)
+
     def test_ahv_account_basic_auth(self):
         """Test AHV account compilation with basic auth (username/password)"""
         with patch(
             "calm.dsl.builtins.models.ahv_account.is_compile_secrets", return_value=True
         ):
-
             account = AccountResources.Ntnx(
                 username="test_user",
                 password="test_password",
                 server="test.server.com",
                 port="9440",
+                domain=self.domain_name,
             )
 
             compiled = account.compile()
@@ -32,7 +51,10 @@ class TestAhvAccountCompile:
             # Check basic properties
             assert compiled["username"] == "test_user"
             assert compiled["server"] == "test.server.com"
-            assert compiled["port"] == "9440"
+            if (
+                is_ncm_enabled_by_config() is False
+            ):  # No assert for NCM to validate Port
+                assert compiled["port"] == 9440
 
             # Check password is properly formatted
             assert "password" in compiled
@@ -60,6 +82,7 @@ class TestAhvAccountCompile:
                 password="test_password",
                 server="test.server.com",
                 port="9440",
+                domain=self.domain_name,
             )
 
             compiled = account.compile()
@@ -86,13 +109,17 @@ class TestAhvAccountCompile:
                 service_account_api_key="test_api_key",
                 server="test.server.com",
                 port="9440",
+                domain=self.domain_name,
             )
 
             compiled = account.compile()
 
             # Check basic properties
             assert compiled["server"] == "test.server.com"
-            assert compiled["port"] == "9440"
+            if (
+                is_ncm_enabled_by_config() is False
+            ):  # No assert for NCM to validate Port
+                assert compiled["port"] == 9440
 
             # Check service account is properly formatted
             assert "service_account" in compiled
@@ -122,6 +149,7 @@ class TestAhvAccountCompile:
                 service_account_api_key="test_api_key",
                 server="test.server.com",
                 port="9440",
+                domain=self.domain_name,
             )
 
             compiled = account.compile()

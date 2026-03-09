@@ -5,10 +5,10 @@ from .connection import REQUEST
 class QuotasAPI(ResourceAPI):
     def __init__(self, connection):
         super().__init__(connection, resource_type="quotas", calm_api=True)
-        self.CREATE = self.PREFIX
-        self.UPDATE_STATE = self.PREFIX + "/update/state"
-        self.LIST = self.PREFIX + "/list"
-        self.UPDATE = self.PREFIX + "/{}"
+        self.CREATE = self.api_base_path
+        self.UPDATE_STATE = self.api_base_path + "/update/state"
+        self.LIST = self.api_base_path + "/list"
+        self.UPDATE = self.api_base_path + "/{}"
 
     def update_state(self, payload):
         return self.connection._call(

@@ -2,6 +2,7 @@ from .entity import Entity, EntityType
 from .validator import PropertyValidator
 from .calm_ref import Ref
 from calm.dsl.log import get_logging_handle
+from calm.dsl.api.ncm_config_util import is_nc_enabled_by_config
 
 
 LOG = get_logging_handle(__name__)
@@ -48,7 +49,10 @@ class Provider:
         def __new__(cls, account, subnets=[], clusters=[], vpcs=[]):
             # TODO add key check for `host_pc` instead of name
             host_pc = False
-            if account["name"] == "NTNX_LOCAL_AZ":
+
+            # for NCM 2.0+ setup there is no concept of local account. NTNX_LOCAL_AZ also behaves as remote account. Hence, it's
+            # subnets should be added in external_network_list instead of subnet_reference_list.
+            if not is_nc_enabled_by_config() and account["name"] == "NTNX_LOCAL_AZ":
                 host_pc = True
 
             return account_provider(

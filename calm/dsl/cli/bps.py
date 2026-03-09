@@ -56,7 +56,7 @@ from calm.dsl.log import get_logging_handle
 from calm.dsl.builtins.models.calm_ref import Ref
 from calm.dsl.decompile.ref_dependency import update_power_action_target_substrate
 from calm.dsl.store.version import Version
-from calm.dsl.cli.helper.common import get_variable_value_options
+from calm.dsl.cli.helper.common import get_variable_value_options, url_builder
 from calm.dsl.constants import GLOBAL_VARIABLE
 
 LOG = get_logging_handle(__name__)
@@ -940,7 +940,9 @@ def get_variable_value(variable, bp_data, launch_runtime_vars):
 
     # CASE for `type` in ['SECRET', 'EXEC_SECRET', 'HTTP_SECRET']
     hide_input = variable.get("type").split("_")[-1] == "SECRET"
-    var_default_val = variable["value"].get("value", None)
+    var_default_val = variable["value"].get("value", None) or (
+        choices[0] if len(choices) == 1 else ""
+    )
     new_val = click.prompt(
         "Value for '{}' in {} [{}]".format(
             var_name, var_context, highlight_text(repr(var_default_val))
@@ -2131,11 +2133,9 @@ def poll_launch_status(client, blueprint_uuid, launch_req_id):
 
             click.echo("Successfully launched. App uuid is: {}".format(app_uuid))
 
-            LOG.info(
-                "App url: https://{}:{}/dm/self_service/applications/{}".format(
-                    pc_ip, pc_port, app_uuid
-                )
-            )
+            url = url_builder(resource="applications")
+            LOG.info("App url: {}/{}".format(url, app_uuid))
+
             return True
             break
         elif app_state == "failure":
@@ -2172,6 +2172,7 @@ def create_patched_blueprint(
     org_bp_name = blueprint["metadata"]["name"]
     org_bp_uuid = blueprint["metadata"]["uuid"]
     project_uuid = project_data["metadata"]["uuid"]
+    project_name = project_data["status"]["name"]
     env_uuid = environment_data["metadata"]["uuid"]
 
     new_bp_name = "{}-{}".format(org_bp_name, str(uuid.uuid4())[:8])
@@ -2179,7 +2180,11 @@ def create_patched_blueprint(
         "api_version": "3.0",
         "metadata": {
             "kind": "blueprint",
-            "project_reference": {"kind": "project", "uuid": project_uuid},
+            "project_reference": {
+                "kind": "project",
+                "uuid": project_uuid,
+                "name": project_name,
+            },
         },
         "spec": {
             "environment_profile_pairs": [

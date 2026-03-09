@@ -9,9 +9,10 @@ from calm.dsl.api import get_api_client, get_resource_api
 from calm.dsl.config import get_context
 from calm.dsl.log import get_logging_handle
 from calm.dsl.store import Cache
-from calm.dsl.constants import CACHE
+from calm.dsl.constants import CACHE, PROJECT_TASK
 from calm.dsl.builtins import Ref
 from calm.dsl.store import Version
+from calm.dsl.cli.projects import watch_project_task
 
 from .constants import ACP, ACP_3_8_0, ACP_BEFORE_3_8_0, ACP_3_8_1, ACP_4_2_0, ROLE
 from .task_commands import watch_task
@@ -87,6 +88,8 @@ def get_acps(name, project_name, filter_by, limit, offset, quiet, out):
         sys.exit(-1)
 
     params = {"length": limit, "offset": offset}
+
+    # TODO: adjust filter_by in future to work with v4 api
     filter_query = ""
     if name:
         filter_query = get_name_query([name])
@@ -102,7 +105,7 @@ def get_acps(name, project_name, filter_by, limit, offset, quiet, out):
             client, project_uuid, limit=limit, offset=offset
         )
     else:
-        res, err = client.acp.list(params=params)
+        res, err = client.authorization_policy.list(params=params)
         res = res.json()
 
     if err:
@@ -179,13 +182,9 @@ def create_acp(role, project, acp_users, acp_groups, name):
     acp_name = name or "nuCalmAcp-{}".format(str(uuid.uuid4()))
 
     # Check whether there is an existing acp with this name
-    params = {"filter": "name=={}".format(acp_name)}
-    res, err = client.acp.list(params=params)
-    if err:
-        return None, err
-
-    response = res.json()
-    entities = response.get("entities", None)
+    entities, _ = client.authorization_policy.list(
+        _filter=f"displayName eq '{acp_name}'"
+    )
 
     if entities:
         LOG.error("ACP {} already exists.".format(acp_name))
@@ -201,12 +200,12 @@ def create_acp(role, project, acp_users, acp_groups, name):
 
     LOG.info("Fetching project '{}' details".format(project))
     ProjectInternalObj = get_resource_api("projects_internal", client.connection)
-    res, err = ProjectInternalObj.read(project_uuid)
+    entities, err = ProjectInternalObj.read(project_uuid)
     if err:
         LOG.error(err)
         sys.exit(-1)
 
-    project_payload = res.json()
+    project_payload = entities.json()
     project_payload.pop("status", None)
     project_resources = project_payload["spec"]["project_detail"].get("resources", "")
 
@@ -243,14 +242,14 @@ def create_acp(role, project, acp_users, acp_groups, name):
     role_uuid = role_cache_data.get("uuid")
 
     limit = 250
-    res, err = get_acps_from_project(
+    entities, err = get_acps_from_project(
         client, project_uuid, role_uuid=role_uuid, limit=limit
     )
     if err:
         return None, err
 
-    entities = res.get("entities", None)
-    if res["metadata"]["total_matches"] > 0:
+    if entities["metadata"]["total_matches"] > 0:
+        entities = entities.get("entities", [])
         LOG.error(
             "ACP {} already exists for given role in project".format(
                 entities[0]["status"]["name"]
@@ -365,13 +364,17 @@ def create_acp(role, project, acp_users, acp_groups, name):
 
     # TODO check these users are not present in project's other acps
     user_references = []
-    user_name_uuid_map = client.user.get_name_uuid_map({"length": 1000})
-    for u in acp_users:
-        user_references.append(
-            {"kind": "user", "name": u, "uuid": user_name_uuid_map[u]}
-        )
+    user_name_uuid_map = client.user.get_name_uuid_map(limit=1000)
 
-    usergroup_name_uuid_map = client.group.get_name_uuid_map({"length": 1000})
+    for u in acp_users:
+        if not user_name_uuid_map.get(u, None):
+            LOG.error("User {} not found".format(u))
+            sys.exit("User {} not found".format(u))
+
+        user_uuid = user_name_uuid_map[u][0]
+        user_references.append({"kind": "user", "name": u, "uuid": user_uuid})
+
+    usergroup_name_uuid_map = client.user_group.get_name_uuid_map(limit=1000)
     group_references = []
     for g in acp_groups:
         group_references.append(
@@ -408,19 +411,31 @@ def create_acp(role, project, acp_users, acp_groups, name):
     project_payload["spec"]["access_control_policy_list"] = acp_list
 
     LOG.info("Creating acp {}".format(acp_name))
-    res, err = ProjectInternalObj.update(project_uuid, project_payload)
+    entities, err = ProjectInternalObj.update(project_uuid, project_payload)
     if err:
         LOG.error(err)
         sys.exit(-1)
 
-    res = res.json()
+    entities = entities.json()
     stdout_dict = {
         "name": acp_name,
-        "execution_context": res["status"]["execution_context"],
+        "execution_context": entities["status"]["execution_context"],
     }
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))
-    LOG.info("Polling on acp creation task")
-    watch_task(res["status"]["execution_context"]["task_uuid"])
+
+    LOG.debug("Response: {}".format(entities))
+    LOG.info("Polling on project updation task")
+    task_state = watch_project_task(
+        project_uuid,
+        entities["status"]["execution_context"]["task_uuid"],
+        poll_interval=4,
+    )
+
+    if task_state in PROJECT_TASK.FAILURE_STATES:
+        LOG.error("Project updation task went to {} state".format(task_state))
+        sys.exit("Project updation task went to {} state".format(task_state))
+
+    LOG.info("Success")
 
 
 def get_filters_custom_role(
@@ -515,8 +530,20 @@ def delete_acp(acp_name, project_name):
         "execution_context": res["status"]["execution_context"],
     }
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))
-    LOG.info("Polling on acp deletion task")
-    watch_task(res["status"]["execution_context"]["task_uuid"])
+
+    LOG.debug("Response: {}".format(res))
+    LOG.info("Polling on project updation task")
+    task_state = watch_project_task(
+        project_uuid,
+        res["status"]["execution_context"]["task_uuid"],
+        poll_interval=4,
+    )
+
+    if task_state in PROJECT_TASK.FAILURE_STATES:
+        LOG.error("Project updation task went to {} state".format(task_state))
+        sys.exit("Project updation task went to {} state".format(task_state))
+
+    LOG.info("Success")
 
 
 def describe_acp(acp_name, project_name, out):
@@ -548,21 +575,19 @@ def describe_acp(acp_name, project_name, out):
         sys.exit(-1)
 
     acp_uuid = res["entities"][0]["metadata"]["uuid"]
-    LOG.info("Fetching acp {} details".format(acp_name))
-    res, err = client.acp.read(acp_uuid)
-    if err:
-        LOG.error(err)
-        sys.exit(-1)
 
-    acp = res.json()
+    acp = res["entities"][0]
+
     if out == "json":
         click.echo(json.dumps(acp, indent=4, separators=(",", ": ")))
         return
 
     click.echo("\n----ACP Summary----\n")
     click.echo("Name: " + highlight_text(acp_name) + " (uuid: " + acp_uuid + ")")
-    click.echo("Status: " + highlight_text(acp["status"]["state"]))
     click.echo("Project: " + highlight_text(project_name))
+
+    if acp.get("status", {}).get("state"):
+        click.echo("Status: " + highlight_text(acp["status"]["state"]))
 
     acp_users = acp["status"]["resources"].get("user_reference_list", [])
     acp_groups = acp["status"]["resources"].get("user_group_reference_list", [])
@@ -582,13 +607,13 @@ def describe_acp(acp_name, project_name, out):
         click.echo("Role: " + highlight_text(role_data["name"]))
 
     if acp_users:
-        user_uuid_name_map = client.user.get_uuid_name_map({"length": 1000})
+        user_uuid_name_map = client.user.get_uuid_name_map(limit=1000)
         click.echo("Users [{}]:".format(highlight_text(len(acp_users))))
         for user in acp_users:
             click.echo("\t" + highlight_text(user_uuid_name_map[user["uuid"]]))
 
     if acp_groups:
-        usergroup_uuid_name_map = client.group.get_uuid_name_map({"length": 1000})
+        usergroup_uuid_name_map = client.user_group.get_uuid_name_map(limit=1000)
         click.echo("Groups [{}]:".format(highlight_text(len(acp_groups))))
         for group in acp_groups:
             click.echo("\t" + highlight_text(usergroup_uuid_name_map[group["uuid"]]))
@@ -712,13 +737,19 @@ def update_acp(
                     updated_group_reference_list.append(group)
 
             # TODO check these users are not present in project's other acps
-            user_name_uuid_map = client.user.get_name_uuid_map({"length": 1000})
+            user_name_uuid_map = client.user.get_name_uuid_map(limit=1000)
             for user in add_user_list:
+                user_uuid = user_name_uuid_map.get(user, [])
+                if not user_uuid:
+                    LOG.error("User {} not found".format(user))
+                    sys.exit("User {} not found".format(user))
+
+                user_uuid = user_uuid[0]
                 updated_user_reference_list.append(
-                    {"kind": "user", "name": user, "uuid": user_name_uuid_map[user]}
+                    {"kind": "user", "name": user, "uuid": user_uuid}
                 )
 
-            usergroup_name_uuid_map = client.group.get_name_uuid_map({"length": 1000})
+            usergroup_name_uuid_map = client.user_group.get_name_uuid_map(limit=1000)
             for group in add_group_list:
                 updated_group_reference_list.append(
                     {
@@ -753,8 +784,20 @@ def update_acp(
         "execution_context": res["status"]["execution_context"],
     }
     click.echo(json.dumps(stdout_dict, indent=4, separators=(",", ": ")))
-    LOG.info("Polling on acp updation task")
-    watch_task(res["status"]["execution_context"]["task_uuid"])
+
+    LOG.debug("Response: {}".format(res))
+    LOG.info("Polling on project updation task")
+    task_state = watch_project_task(
+        project_uuid,
+        res["status"]["execution_context"]["task_uuid"],
+        poll_interval=4,
+    )
+
+    if task_state in PROJECT_TASK.FAILURE_STATES:
+        LOG.error("Project updation task went to {} state".format(task_state))
+        sys.exit("Project updation task went to {} state".format(task_state))
+
+    LOG.info("Success")
 
 
 def get_updated_acp_filter_list(role, filter_list, scope):

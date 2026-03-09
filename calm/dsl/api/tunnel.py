@@ -5,7 +5,9 @@ from .connection import REQUEST
 class TunnelAPI(ResourceAPI):
     def __init__(self, connection):
         super().__init__(connection, resource_type="tunnels")
-        self.TUNNEL_ENTITY_USAGE = "{}/{}".format(self.PREFIX, "{}/entity_references")
+        self.TUNNEL_ENTITY_USAGE = "{}/{}".format(
+            self.api_base_path, "{}/entity_references"
+        )
 
     def entity_references(self, uuid, ignore_error=False):
         """

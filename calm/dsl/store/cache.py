@@ -8,8 +8,10 @@ from calm.dsl.config import get_context
 from .version import Version
 from calm.dsl.db import get_db_handle, init_db_handle
 from calm.dsl.log import get_logging_handle
-from calm.dsl.api import get_client_handle_obj
+from calm.dsl.api import get_client_handle_by_deployment
 from calm.dsl.api.util import get_auth_info
+from calm.dsl.db.table_config import AhvNetworkFunctionChain, DomainsCache
+from calm.dsl.api.ncm_config_util import is_nc_enabled_by_config
 
 LOG = get_logging_handle(__name__)
 
@@ -35,10 +37,28 @@ class Cache:
             cred = get_auth_info(api_key_location)
             username = cred.get("username")
             password = cred.get("password")
-            client = get_client_handle_obj(
+
+            nc_server_config = context.get_nc_server_config()
+            nc_enabled = nc_server_config.get("enabled", False)
+            nc_host = nc_server_config.get("host", None)
+            nc_username = nc_server_config.get("username", None)
+            nc_password = nc_server_config.get("password", None)
+
+            ncm_server_config = context.get_ncm_server_config()
+            ncm_enabled = ncm_server_config.get("ncm_enabled", False)
+            ncm_host = ncm_server_config.get("host", None)
+            ncm_port = ncm_server_config.get("port", None)
+
+            client = get_client_handle_by_deployment(
                 server_config["pc_ip"],
                 server_config["pc_port"],
                 auth=(username, password),
+                nc_enabled=nc_enabled,
+                nc_host=nc_host,
+                nc_auth=(nc_username, nc_password),
+                ncm_enabled=ncm_enabled,
+                ncm_host=ncm_host,
+                ncm_port=ncm_port,
             )
             res, err = client.version.get_calm_version()
             if err:
@@ -49,21 +69,35 @@ class Cache:
         policy_config = context.get_policy_config()
         approval_policy_config = context.get_approval_policy_config()
         cache_tables = {}
+
+        # For NC setup this table is not needed
+        if is_nc_enabled_by_config() and AhvNetworkFunctionChain in db_tables:
+            db_tables.remove(AhvNetworkFunctionChain)
+
+        # For non NC setup this table is not needed
+        if not is_nc_enabled_by_config() and DomainsCache in db_tables:
+            db_tables.remove(DomainsCache)
+
         for table in db_tables:
             if hasattr(table, "__cache_type__") and (
                 LV(calm_version) >= LV(table.feature_min_version)
             ):
                 if table.is_approval_policy_required:
                     # if approval policy is required check policy and approval_policy status
+
+                    policy_status = policy_config.get("policy_status", "False")
+                    if isinstance(policy_status, str):
+                        policy_status = eval(policy_status)
+
                     if (
-                        eval(policy_config.get("policy_status", "False"))
-                        == table.is_policy_required
+                        policy_status == table.is_policy_required
                         and approval_policy_config.get(
                             "approval_policy_status", "False"
                         )
                         == "True"
                     ):
                         cache_tables[table.__cache_type__] = table
+
                 elif table.is_policy_required:
                     if policy_config.get("policy_status", "False") == "True":
                         cache_tables[table.__cache_type__] = table
@@ -177,6 +211,7 @@ class Cache:
                             table.get_cache_type()
                         )
                     )
+                    LOG.error("Error occurred while syncing cache: {}".format(exp))
                 click.echo(".", nl=False, err=True)
 
         cache_table_map = cls.get_cache_tables(sync_version=True)

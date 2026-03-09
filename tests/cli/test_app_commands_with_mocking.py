@@ -70,9 +70,6 @@ class TestAppCommands:
         connection = Connection("10.46.34.230", "9440", "basic")
         connection._call = MagicMock(side_effect=KeyError("foo"))
         result = runner.invoke(cli, ["get", "apps"])
-        # output = result.output
-        # import ipdb; ipdb.set_trace()
-        # result = runner.invoke(cli, ["describe", "apps"])
         assert result.exit_code == 0
         print(result.output)
 

@@ -5,7 +5,7 @@ from .connection import REQUEST
 class MarketPlaceAPI(ResourceAPI):
     def __init__(self, connection):
         super().__init__(connection, resource_type="calm_marketplace_items")
-        self.VARIABLE_VALUES = self.ITEM + "/variables/{}/values"
+        self.VARIABLE_VALUES = self.item_path + "/variables/{}/values"
 
     # https://jira.nutanix.com/browse/CALM-33232
     # Marketplace API taking more than 30s so setting it to 300s

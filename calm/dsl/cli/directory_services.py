@@ -17,19 +17,9 @@ def get_directory_services(name, filter_by, limit, offset, quiet, out):
 
     client = get_api_client()
 
-    params = {"length": limit, "offset": offset}
-    filter_query = ""
-    if name:
-        filter_query = get_name_query([name])
-    if filter_by:
-        filter_query = filter_query + ";(" + filter_by + ")"
-    if filter_query.startswith(";"):
-        filter_query = filter_query[1:]
+    # TODO: Add filter_by in future according to new v4 api structure
 
-    if filter_query:
-        params["filter"] = filter_query
-
-    res, err = client.directory_service.list(params=params)
+    res, err = client.directory_service.list()
 
     if err:
         context = get_context()
@@ -39,8 +29,7 @@ def get_directory_services(name, filter_by, limit, offset, quiet, out):
         LOG.warning("Cannot fetch directory_services from {}".format(pc_ip))
         return
 
-    res = res.json()
-    total_matches = res["metadata"]["total_matches"]
+    total_matches = len(res)
     if total_matches > limit:
         LOG.warning(
             "Displaying {} out of {} entities. Please use --limit and --offset option for more results.".format(
@@ -52,15 +41,14 @@ def get_directory_services(name, filter_by, limit, offset, quiet, out):
         click.echo(json.dumps(res, indent=4, separators=(",", ": ")))
         return
 
-    json_rows = res["entities"]
+    json_rows = res
     if not json_rows:
         click.echo(highlight_text("No directory service found !!!\n"))
         return
 
     if quiet:
         for _row in json_rows:
-            row = _row["status"]
-            click.echo(highlight_text(row["name"]))
+            click.echo(highlight_text(_row["name"]))
         return
 
     table = PrettyTable()
@@ -69,22 +57,20 @@ def get_directory_services(name, filter_by, limit, offset, quiet, out):
         "DIRECTORY TYPE",
         "DOMAIN NAME",
         "URL",
-        "STATE",
         "UUID",
+        "TENANT ID",
     ]
 
     for _row in json_rows:
-        row = _row["status"]
-        metadata = _row["metadata"]
 
         table.add_row(
             [
-                highlight_text(row["name"]),
-                highlight_text(row["resources"]["directory_type"]),
-                highlight_text(row["resources"]["domain_name"]),
-                highlight_text(row["resources"]["url"]),
-                highlight_text(row["state"]),
-                highlight_text(metadata["uuid"]),
+                highlight_text(_row["name"]),
+                highlight_text(_row.get("directoryType", "")),
+                highlight_text(_row.get("domainName", "")),
+                highlight_text(_row.get("url", "")),
+                highlight_text(_row.get("extId", "")),
+                highlight_text(_row.get("tenantId", "")),
             ]
         )
 

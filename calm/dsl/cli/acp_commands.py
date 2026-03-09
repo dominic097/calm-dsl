@@ -31,7 +31,6 @@ from .main import get, create, delete, update, describe
 )
 def _get_acps(name, project, filter_by, limit, offset, quiet, out):
     """Get acps, optionally filtered by a string"""
-
     get_acps(name, project, filter_by, limit, offset, quiet, out)
 
 

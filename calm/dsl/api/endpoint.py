@@ -4,17 +4,18 @@ from .resource import ResourceAPI
 from .connection import REQUEST
 from .util import strip_secrets, patch_secrets
 from calm.dsl.config import get_context
-from .project import ProjectAPI
 
 
 class EndpointAPI(ResourceAPI):
     def __init__(self, connection):
         super().__init__(connection, resource_type="endpoints")
-        self.UPLOAD = self.PREFIX + "/import_json"
-        self.EXPORT_FILE = self.ITEM + "/export_file"
-        self.IMPORT_FILE = self.PREFIX + "/import_file"
-        self.EXPORT_JSON = self.ITEM + "/export_json"
-        self.EXPORT_JSON_WITH_SECRETS = self.ITEM + "/export_json?keep_secrets=true"
+        self.UPLOAD = self.api_base_path + "/import_json"
+        self.EXPORT_FILE = self.item_path + "/export_file"
+        self.IMPORT_FILE = self.api_base_path + "/import_file"
+        self.EXPORT_JSON = self.item_path + "/export_json"
+        self.EXPORT_JSON_WITH_SECRETS = (
+            self.item_path + "/export_json?keep_secrets=true"
+        )
 
     def upload(self, payload):
         return self.connection._call(
@@ -91,11 +92,15 @@ class EndpointAPI(ResourceAPI):
             ContextObj = get_context()
             project_config = ContextObj.get_project_config()
             project_name = project_config["name"]
-            projectObj = ProjectAPI(self.connection)
+
+            # Importing here to avoid circular import
+            from calm.dsl.api import get_api_client
+
+            client = get_api_client()
 
             # Fetch project details
             params = {"filter": "name=={}".format(project_name)}
-            res, err = projectObj.list(params=params)
+            res, err = client.project.list(params=params)
             if err:
                 raise Exception("[{}] - {}".format(err["code"], err["error"]))
 

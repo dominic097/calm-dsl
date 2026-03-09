@@ -18,26 +18,29 @@ LOG = get_logging_handle(__name__)
 class BlueprintAPI(ResourceAPI):
     def __init__(self, connection):
         super().__init__(connection, resource_type="blueprints")
-        self.UPLOAD = self.PREFIX + "/import_json"
-        self.LAUNCH = self.ITEM + "/simple_launch"
-        self.FULL_LAUNCH = self.ITEM + "/launch"
-        self.MARKETPLACE_LAUNCH = self.PREFIX + "/marketplace_launch"
-        self.LAUNCH_POLL = self.ITEM + "/pending_launches/{}"
-        self.BP_EDITABLES = self.ITEM + "/runtime_editables"
-        self.IMPORT_FILE = self.PREFIX + "/import_file"
-        self.EXPORT_JSON = self.ITEM + "/export_json"
-        self.EXPORT_JSON_WITH_SECRETS = self.ITEM + "/export_json?keep_secrets=true"
-        self.EXPORT_FILE = self.ITEM + "/export_file"
-        self.BROWNFIELD_VM_LIST = self.PREFIX + "/brownfield_import/vms/list"
-        self.PATCH_WITH_ENVIRONMENT = self.ITEM + "/patch_with_environment"
-        self.VARIABLE_VALUES = self.ITEM + "/variables/{}/values"
+        self.UPLOAD = self.api_base_path + "/import_json"
+        self.LAUNCH = self.item_path + "/simple_launch"
+        self.FULL_LAUNCH = self.item_path + "/launch"
+        self.MARKETPLACE_LAUNCH = self.api_base_path + "/marketplace_launch"
+        self.LAUNCH_POLL = self.item_path + "/pending_launches/{}"
+        self.BP_EDITABLES = self.item_path + "/runtime_editables"
+        self.IMPORT_FILE = self.api_base_path + "/import_file"
+        self.EXPORT_JSON = self.item_path + "/export_json"
+        self.EXPORT_JSON_WITH_SECRETS = (
+            self.item_path + "/export_json?keep_secrets=true"
+        )
+        self.EXPORT_FILE = self.item_path + "/export_file"
+        self.BROWNFIELD_VM_LIST = self.api_base_path + "/brownfield_import/vms/list"
+        self.PATCH_WITH_ENVIRONMENT = self.item_path + "/patch_with_environment"
+        self.VARIABLE_VALUES = self.item_path + "/variables/{}/values"
         self.VARIABLE_VALUES_WITH_TRLID = (
             self.VARIABLE_VALUES + "?requestId={}&trlId={}"
         )
         self.PROTECTION_POLICY_LIST = (
-            self.ITEM + "/app_profile/{}/config_spec/{}/app_protection_policies/list"
+            self.item_path
+            + "/app_profile/{}/config_spec/{}/app_protection_policies/list"
         )
-        self.RUN_SCRIPT = self.PREFIX + "/{}/run_script"
+        self.RUN_SCRIPT = self.api_base_path + "/{}/run_script"
         self.GET_SCRIPT = self.RUN_SCRIPT + "/output/{}/{}"
 
     # TODO https://jira.nutanix.com/browse/CALM-17178

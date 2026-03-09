@@ -5,10 +5,10 @@ import traceback
 from click.testing import CliRunner
 
 from calm.dsl.cli import main as cli
-from calm.dsl.cli.task_commands import watch_task
-from calm.dsl.cli.constants import ERGON_TASK
+from calm.dsl.cli.projects import watch_project_task
 from calm.dsl.builtins import read_local_file
 from calm.dsl.api import get_api_client
+from calm.dsl.constants import PROJECT_TASK
 from calm.dsl.builtins.models.helper.common import get_project
 from calm.dsl.log import get_logging_handle
 
@@ -75,9 +75,16 @@ class TestProjectUpdate:
             pytest.fail("[{}] - {}".format(err["code"], err["error"]))
         else:
             res = res.json()
-            task_state = watch_task(res["status"]["execution_context"]["task_uuid"])
-            if task_state in ERGON_TASK.FAILURE_STATES:
+
+            LOG.info("Polling on project creation task")
+            task_state = watch_project_task(
+                res["metadata"]["uuid"],
+                res["status"]["execution_context"]["task_uuid"],
+                poll_interval=4,
+            )
+            if task_state in PROJECT_TASK.FAILURE_STATES:
                 pytest.fail("Project creation task went to {} state".format(task_state))
+
             LOG.info("Success")
             LOG.debug("Response: {}".format(res))
             LOG.info("PROJECT NAME:{}".format(self.project_name))
@@ -92,9 +99,16 @@ class TestProjectUpdate:
 
         else:
             res = res.json()
-            task_state = watch_task(res["status"]["execution_context"]["task_uuid"])
-            if task_state in ERGON_TASK.FAILURE_STATES:
+
+            LOG.info("Polling on project deletion task")
+            task_state = watch_project_task(
+                self.project_uuid,
+                res["status"]["execution_context"]["task_uuid"],
+                poll_interval=4,
+            )
+            if task_state in PROJECT_TASK.FAILURE_STATES:
                 pytest.fail("Project deletion task went to {} state".format(task_state))
+
             LOG.info("Success")
             LOG.debug("Response: {}".format(res))
 
@@ -136,6 +150,12 @@ class TestProjectUpdate:
         for _cluster in project_data["spec"]["resources"]["cluster_reference_list"]:
             self.updated_clusters.append(_cluster["uuid"])
 
+    def get_short_group_name(self, group_name):
+        """Extracts 'sspgroupqa1' from 'cn=sspgroupqa1,cn=users...'"""
+        if "cn=" in group_name.lower():
+            return group_name.split(",")[0].split("=")[1]
+        return group_name
+
     def test_update_project_with_append_only(self):
         """tests project update with --append-only flag"""
 
@@ -174,7 +194,8 @@ class TestProjectUpdate:
         assert set(self.updated_users) == set(UPDATED_USERS_NAME)
 
         assert len(self.updated_groups) == len(UPDATED_GROUPS_NAME)
-        assert set(self.updated_groups) == set(UPDATED_GROUPS_NAME)
+        extracted_groups = [self.get_short_group_name(g) for g in self.updated_groups]
+        assert set(extracted_groups) == set(UPDATED_GROUPS_NAME)
 
         assert len(self.updated_subnets) == len(UPDATED_SUBNET_NAME)
         assert set(self.updated_subnets) == set(UPDATED_SUBNET_NAME)

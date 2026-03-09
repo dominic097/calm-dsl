@@ -577,13 +577,14 @@ def describe_project(project_name, out):
         "Owner: " + highlight_text(project["metadata"]["owner_reference"]["name"])
     )
 
-    created_on = arrow.get(project["metadata"]["creation_time"])
-    past = created_on.humanize()
-    click.echo(
-        "Created on: {} ({})".format(
-            highlight_text(time.ctime(created_on.timestamp)), highlight_text(past)
+    if project["metadata"].get("creation_time"):
+        created_on = arrow.get(project["metadata"]["creation_time"])
+        past = created_on.humanize()
+        click.echo(
+            "Created on: {} ({})".format(
+                highlight_text(time.ctime(created_on.timestamp)), highlight_text(past)
+            )
         )
-    )
 
     project_resources = project["status"].get("resources", {})
     environments = project_resources.get("environment_reference_list", [])
@@ -598,14 +599,14 @@ def describe_project(project_name, out):
 
     users = project_resources.get("user_reference_list", [])
     if users:
-        user_uuid_name_map = client.user.get_uuid_name_map({"length": 1000})
+        user_uuid_name_map = client.user.get_uuid_name_map(limit=1000)
         click.echo("\nRegistered Users: \n--------------------")
         for user in users:
             click.echo("\t" + highlight_text(user_uuid_name_map[user["uuid"]]))
 
     groups = project_resources.get("external_user_group_reference_list", [])
     if groups:
-        usergroup_uuid_name_map = client.group.get_uuid_name_map({"length": 1000})
+        usergroup_uuid_name_map = client.user_group.get_uuid_name_map(limit=1000)
         click.echo("\nRegistered Groups: \n--------------------")
         for group in groups:
             click.echo("\t" + highlight_text(usergroup_uuid_name_map[group["uuid"]]))
@@ -1065,21 +1066,34 @@ def update_project_using_cli_switches(
         else:
             acp_remove_group_list.append(group["name"])
 
-    user_name_uuid_map = client.user.get_name_uuid_map({"length": 1000})
+    user_name_uuid_map = client.user.get_name_uuid_map(limit=1000)
     for user in add_user_list:
+        user_uuid = user_name_uuid_map.get(user, [])
+        if not user_uuid:
+            LOG.error("User {} not found".format(user))
+            sys.exit("User {} not found".format(user))
+
+        user_uuid = user_uuid[0]
         updated_user_reference_list.append(
-            {"kind": "user", "name": user, "uuid": user_name_uuid_map[user]}
+            {"kind": "user", "name": user, "uuid": user_uuid}
         )
 
-    usergroup_name_uuid_map = client.group.get_name_uuid_map({"length": 1000})
+    usergroup_name_uuid_map = client.user_group.get_name_uuid_map(limit=1000)
 
     add_group_list = convert_groups_to_lowercase(add_group_list)
     for group in add_group_list:
+        usergroup_uuid = usergroup_name_uuid_map.get(group, [])
+        if not usergroup_uuid:
+            LOG.error("User group {} not found".format(group))
+            sys.exit("User group {} not found".format(group))
+
+        usergroup_uuid = usergroup_uuid[0]
+
         updated_group_reference_list.append(
             {
                 "kind": "user_group",
                 "name": group,
-                "uuid": usergroup_name_uuid_map[group],
+                "uuid": usergroup_uuid,
             }
         )
 

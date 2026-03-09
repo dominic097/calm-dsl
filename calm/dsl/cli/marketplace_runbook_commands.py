@@ -39,21 +39,19 @@ APP_SOURCES = [
 
 # TODO Add limit and offset
 @marketplace_get.command("runbooks", feature_min_version="3.2.0")
-@click.option(
-    "--name", "-n", default=None, help="Filter by name of marketplace runbooks"
-)
+@click.option("--name", "-n", default=None, help="Filter by name of NCM store runbooks")
 @click.option(
     "--quiet",
     "-q",
     is_flag=True,
     default=False,
-    help="Show only marketplace runbooks names",
+    help="Show only NCM store runbooks names",
 )
 @click.option(
     "--app_family",
     "-f",
     default="All",
-    help="Filter by app family category of marketplace runbooks",
+    help="Filter by app family category of NCM store runbooks",
 )
 @click.option(
     "--app_state",
@@ -61,17 +59,17 @@ APP_SOURCES = [
     "app_states",
     type=click.Choice(APP_STATES),
     multiple=True,
-    help="filter by state of marketplace runbooks",
+    help="filter by state of NCM store runbooks",
 )
 @click.option(
     "--filter",
     "filter_by",
     "-fb",
     default=None,
-    help="Filter marketplace runbooks by this string",
+    help="Filter NCM store runbooks by this string",
 )
 def _get_marketplace_runbooks(name, quiet, app_family, app_states, filter_by):
-    """Get marketplace manager runbooks"""
+    """Get NCM store manager runbooks"""
 
     get_marketplace_items(
         name=name,
@@ -93,23 +91,23 @@ def _get_marketplace_runbooks(name, quiet, app_family, app_states, filter_by):
     default="text",
     help="output format.",
 )
-@click.option("--version", "-v", default=None, help="Version of marketplace runbooks")
+@click.option("--version", "-v", default=None, help="Version of NCM store runbooks")
 @click.option(
     "--source",
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source of marketplace runbook",
+    help="App Source of NCM store runbook",
 )
 @click.option(
     "--app_state",
     "-a",
     default=None,
     type=click.Choice(APP_STATES),
-    help="State of marketplace runbook",
+    help="State of NCM store runbook",
 )
 def _describe_marketplace_runbook(name, out, version, source, app_state):
-    """Describe a marketplace manager runbook"""
+    """Describe a NCM store manager runbook"""
 
     describe_marketplace_item(
         name=name, out=out, version=version, app_source=source, app_state=app_state
@@ -118,21 +116,21 @@ def _describe_marketplace_runbook(name, out, version, source, app_state):
 
 @marketplace_approve.command("runbook", feature_min_version="3.2.0")
 @click.argument("name", nargs=1)
-@click.option("--version", "-v", default=None, help="Version of marketplace runbook")
-@click.option("--category", "-c", default=None, help="Category for marketplace runbook")
+@click.option("--version", "-v", default=None, help="Version of NCM store runbook")
+@click.option("--category", "-c", default=None, help="Category for NCM store runbook")
 @click.option(
     "--project",
     "-p",
     "projects",
     multiple=True,
-    help="Add projects to marketplace runbook",
+    help="Add projects to NCM store runbook",
 )
 @click.option(
     "--remove-project",
     "-rp",
     "remove_projects",
     multiple=True,
-    help="Remove projects from marketplace runbook",
+    help="Remove projects from NCM store runbook",
 )
 @click.option(
     "--all_projects",
@@ -144,7 +142,7 @@ def _describe_marketplace_runbook(name, out, version, source, app_state):
 def approve_runbook(
     name, version, category, all_projects, projects=[], remove_projects=[]
 ):
-    """Approves a marketplace manager runbook"""
+    """Approves a NCM store manager runbook"""
 
     approve_marketplace_item(
         name=name,
@@ -159,21 +157,21 @@ def approve_runbook(
 
 @marketplace_publish.command("runbook", feature_min_version="3.2.0")
 @click.argument("name", nargs=1)
-@click.option("--version", "-v", default=None, help="Version of marketplace runbook")
-@click.option("--category", "-c", default=None, help="Category for marketplace runbook")
+@click.option("--version", "-v", default=None, help="Version of NCM store runbook")
+@click.option("--category", "-c", default=None, help="Category for NCM store runbook")
 @click.option(
     "--source",
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source for marketplace runbook",
+    help="App Source for NCM store runbook",
 )
 @click.option(
     "--project",
     "-p",
     "projects",
     multiple=True,
-    help="Projects for marketplace runbook",
+    help="Projects for NCM store runbook",
 )
 @click.option(
     "--all_projects",
@@ -185,7 +183,7 @@ def approve_runbook(
 def _publish_marketplace_runbook(
     name, version, category, source, all_projects, projects=[]
 ):
-    """Publish a marketplace runbook to marketplace store"""
+    """Publish a NCM store manager runbook to NCM store"""
 
     publish_marketplace_item(
         name=name,
@@ -201,35 +199,35 @@ def _publish_marketplace_runbook(
 @marketplace_update.command("runbook", feature_min_version="3.2.0")
 @click.argument("name", nargs=1)
 @click.option(
-    "--version", "-v", required=True, help="Version of marketplace runbook"
+    "--version", "-v", required=True, help="Version of NCM store runbook"
 )  # Required to prevent unwanted update of published mpi
-@click.option("--category", "-c", default=None, help="Category for marketplace runbook")
+@click.option("--category", "-c", default=None, help="Category for NCM store runbook")
 @click.option(
     "--project",
     "-p",
     "projects",
     multiple=True,
-    help="Projects for marketplace runbook",
+    help="Projects for NCM store runbook",
 )
-@click.option("--description", "-d", help="Description for marketplace runbook")
+@click.option("--description", "-d", help="Description for NCM store runbook")
 @click.option(
     "--source",
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source for marketplace runbook",
+    help="App Source for NCM store runbook",
 )
 @click.option(
     "--all_projects",
     "-ap",
     is_flag=True,
     default=False,
-    help="Update marketplace runbook with all projects",
+    help="Update NCM store runbook with all projects",
 )
 def _update_marketplace_runbook(
     name, version, category, projects, description, source, all_projects
 ):
-    """Update a marketplace manager runbook"""
+    """Update a NCM store manager runbook"""
 
     update_marketplace_item(
         name=name,
@@ -246,24 +244,24 @@ def _update_marketplace_runbook(
 @marketplace_delete.command("runbook", feature_min_version="3.2.0")
 @click.argument("name")
 @click.option(
-    "--version", "-v", required=True, help="Version of marketplace runbook"
+    "--version", "-v", required=True, help="Version of NCM store runbook"
 )  # Required to prevent unwanted delete of unknown mpi
 @click.option(
     "--source",
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source of marketplace runbook",
+    help="App Source of NCM store runbook",
 )
 @click.option(
     "--app_state",
     "-a",
     default=None,
     type=click.Choice(APP_STATES),
-    help="State of marketplace runbook",
+    help="State of NCM store runbook",
 )
 def _delete_marketplace_runbook(name, version, source, app_state):
-    """Deletes marketplace manager runbook"""
+    """Deletes NCM store manager runbook"""
 
     delete_marketplace_item(
         name=name,
@@ -277,10 +275,10 @@ def _delete_marketplace_runbook(name, version, source, app_state):
 @marketplace_reject.command("runbook", feature_min_version="3.2.0")
 @click.argument("name")
 @click.option(
-    "--version", "-v", required=True, help="Version of marketplace runbook"
+    "--version", "-v", required=True, help="Version of NCM store runbook"
 )  # Required to prevent unwanted rejection of unknown mpi
 def _reject_marketplace_runbook(name, version):
-    """Reject marketplace manager runbook"""
+    """Reject NCM store manager runbook"""
 
     reject_marketplace_item(
         name=name, version=version, type=MARKETPLACE_ITEM.TYPES.RUNBOOK
@@ -289,38 +287,38 @@ def _reject_marketplace_runbook(name, version):
 
 @publish.command("runbook", feature_min_version="3.2.0")
 @click.argument("runbook_name")
-@click.option("--version", "-v", required=True, help="Version of marketplace runbook")
-@click.option("--name", "-n", default=None, help="Name of marketplace runbook")
+@click.option("--version", "-v", required=True, help="Version of NCM store runbook")
+@click.option("--name", "-n", default=None, help="Name of NCM store runbook")
 @click.option(
-    "--description", "-d", default="", help="Description for marketplace runbook"
+    "--description", "-d", default="", help="Description for NCM store runbook"
 )
 @click.option(
     "--with_secrets",
     "-w",
     is_flag=True,
     default=False,
-    help="Preserve secrets while publishing runbooks to marketplace",
+    help="Preserve secrets while publishing runbooks to NCM store",
 )
 @click.option(
     "--with_endpoints",
     "-w",
     is_flag=True,
     default=False,
-    help="Preserve endpoints publishing runbooks to marketplace",
+    help="Preserve endpoints publishing runbooks to NCM store",
 )
 @click.option(
     "--existing_marketplace_runbook",
     "-e",
     is_flag=True,
     default=False,
-    help="Publish as new version of existing marketplace runbook",
+    help="Publish as new version of existing NCM store runbook",
 )
 @click.option(
     "--publish_to_marketplace",
     "-pm",
     is_flag=True,
     default=False,
-    help="Publish the runbook directly to marketplace skipping the steps to approve, etc.",
+    help="Publish the runbook directly to NCM store skipping the steps to approve, etc.",
 )
 @click.option(
     "--auto_approve",
@@ -334,13 +332,13 @@ def _reject_marketplace_runbook(name, version):
     "-p",
     "projects",
     multiple=True,
-    help="Projects for marketplace runbook (used for approving runbook)",
+    help="Projects for NCM store runbook (used for approving runbook)",
 )
 @click.option(
     "--category",
     "-c",
     default=None,
-    help="Category for marketplace runbook (used for approving runbook)",
+    help="Category for NCM store runbook (used for approving runbook)",
 )
 @click.option(
     "--file",
@@ -351,7 +349,7 @@ def _reject_marketplace_runbook(name, version):
     help="Path of app icon image to be uploaded",
 )
 @click.option(
-    "--icon_name", "-i", default=None, help="App icon name for marketplace runbook"
+    "--icon_name", "-i", default=None, help="App icon name for NCM store runbook"
 )
 @click.option(
     "--all_projects",
@@ -376,7 +374,7 @@ def publish_runbook(
     icon_file=None,
     all_projects=False,
 ):
-    """Publish a runbook to marketplace manager"""
+    """Publish a runbook to NCM store manager"""
 
     if not name:
         # Using runbook name as the marketplace runbook name if no name provided
@@ -419,7 +417,7 @@ def publish_runbook(
 
 @marketplace_run.command("runbook", feature_min_version="3.2.0")
 @click.argument("name")
-@click.option("--version", "-v", default=None, help="Version of marketplace item")
+@click.option("--version", "-v", default=None, help="Version of NCM store item")
 @click.option("--project", "-pj", default=None, help="Project for the execution")
 @click.option(
     "--ignore_runtime_variables",
@@ -433,13 +431,13 @@ def publish_runbook(
     "-s",
     default=None,
     type=click.Choice(APP_SOURCES),
-    help="App Source of marketplace item",
+    help="App Source of NCM store item",
 )
 @click.option("--watch/--no-watch", "-w", default=False, help="Watch scrolling output")
 def _run_marketplace_runbook(
     name, version, project, source, ignore_runtime_variables, watch
 ):
-    """Execute a marketplace item of type runbook"""
+    """Execute a NCM store item of type runbook"""
 
     execute_marketplace_runbook(
         name=name,

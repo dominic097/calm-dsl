@@ -1,8 +1,13 @@
+import sys
 from .entity import EntityType, Entity
 
 from calm.dsl.log import get_logging_handle
 from .validator import PropertyValidator
-from calm.dsl.constants import ENTITY, ACCOUNT
+from calm.dsl.constants import ENTITY, ACCOUNT, DOMAIN
+from calm.dsl.api.ncm_config_util import is_nc_enabled_by_config
+from calm.dsl.store import Cache, Version
+from calm.dsl.db.table_config import DomainsCache
+
 from .utils import is_compile_secrets
 from distutils.version import LooseVersion as LV
 from calm.dsl.store.version import Version
@@ -48,6 +53,34 @@ class AhvAccountType(EntityType):
             else:
                 cdict["cred_type"] = ACCOUNT.CRED_TYPE.BASIC_AUTH
 
+        # Set domain for NCM2.0 only. Hence 4.3.1 and NCM enabled , both should be checked to avoid NCM1.5 compatibility issues.
+        if is_nc_enabled_by_config() and LV(calm_version) >= LV(
+            DOMAIN.MIN_SUPPORTED_VERSION
+        ):
+            domain_name = cdict.get("domain", None)
+            if not domain_name:
+                LOG.error("Domain name is required for NCM 2.0+")
+                sys.exit("Domain name is required for NCM 2.0+")
+
+            domain_cache_data = DomainsCache.get_entity_data(name=domain_name)
+            if not domain_cache_data:
+                raise Exception(
+                    "Domain {} not found. Please run: calm update cache".format(
+                        domain_name
+                    )
+                )
+
+            cdict["pc_uuid"] = domain_cache_data.get("uuid", "")
+
+        return cdict
+
+    def post_compile(cls, cdict):
+        cdict = super().post_compile(cdict)
+        if not is_nc_enabled_by_config():
+            cdict.pop("pc_uuid", None)
+
+        # domain name is not required to pass in payload for on-prem and NCM setups.
+        cdict.pop("domain", None)
         return cdict
 
 

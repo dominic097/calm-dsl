@@ -31,11 +31,30 @@ def _get_groups(name, filter_by, limit, offset, quiet, out):
 
 
 @create.command("group")
-@click.option("--name", "-n", required=True, help="Distinguished name of group")
-def _create_group(name):
-    """Creates a user-group"""
+@click.option("--name", "-n", required=True, help="Common name of the user group")
+@click.option(
+    "--directory",
+    "-d",
+    "directory_service",
+    required=True,
+    help="Name of the directory service",
+)
+@click.option(
+    "--distinguished-name",
+    "-dn",
+    "distinguished_name",
+    required=True,
+    help="Distinguished name of the user group",
+)
+def _create_group(name, directory_service, distinguished_name):
+    """Creates a user-group
 
-    create_group(name)
+    \b
+    Example:
+      calm create group -n "grp123" -d "MyDirectory" -dn "cn=Grp123,cn=users,dc=domain1,dc=com"
+    """
+
+    create_group(name, directory_service, distinguished_name)
 
 
 @delete.command("group")

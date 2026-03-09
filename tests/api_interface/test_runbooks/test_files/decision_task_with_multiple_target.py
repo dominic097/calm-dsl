@@ -10,8 +10,16 @@ from calm.dsl.runbooks import CalmEndpoint as Endpoint
 from calm.dsl.runbooks import read_local_file, basic_cred
 from calm.dsl.config import get_context
 
+from calm.dsl.api.ncm_config_util import (
+    is_nc_enabled_by_config,
+    is_ncm_enabled_by_config,
+)
+
 ContextObj = get_context()
 server_config = ContextObj.get_server_config()
+ncm_server_config = (
+    ContextObj.get_ncm_server_config() if is_ncm_enabled_by_config() else None
+)
 DSL_CONFIG = json.loads(read_local_file(".tests/config.json"))
 linux_ip = read_local_file(".tests/runbook_tests/vm_ip")
 linux_ip2 = DSL_CONFIG["EXISTING_MACHINE"]["IP_2"]
@@ -60,8 +68,10 @@ def DecisionWithMultipleIpTarget(
     endpoints=[multi_target_linux_endpoint, endpoint_with_multiple_urls]
 ):
 
-    base = Variable.Simple(  # noqa
-        "https://{}:9440/api/nutanix/v3".format(server_config["pc_ip"])
+    base = Variable.Simple(
+        "https://{}/api/nutanix/v3".format(ncm_server_config["host"])
+        if is_ncm_enabled_by_config()
+        else "https://{}:9440/api/nutanix/v3".format(server_config["pc_ip"])
     )
 
     with Task.Decision.ssh(script=linux_ip_pass_script, target=endpoints[0]) as d1:

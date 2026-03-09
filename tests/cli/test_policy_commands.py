@@ -705,7 +705,7 @@ class TestPolicyCommands:
         client = get_api_client()
         app = _get_app(client, self.created_app_name)
         app_id = app["metadata"]["uuid"]
-        url = client.application.ITEM.format(app_id) + "/app_runlogs/list"
+        url = client.application.item_path.format(app_id) + "/app_runlogs/list"
         payload = {"filter": "application_reference=={}".format(app_id)}
         res, err = client.application.poll_action_run(url, payload)
         if err:

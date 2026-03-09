@@ -31,6 +31,7 @@ class Context:
         config_handle = get_config_handle()
         self.server_config = config_handle.get_server_config()
         self.ncm_server_config = config_handle.get_ncm_server_config()
+        self.nc_server_config = self._set_default_nc_server_config(config_handle)
         self.project_config = config_handle.get_project_config()
         self.log_config = config_handle.get_log_config()
         self.categories_config = config_handle.get_categories_config()
@@ -70,30 +71,36 @@ class Context:
         """returns server configuration"""
 
         config = self.server_config
-        try:  # if all server variables are present either in env or some other way, not required to validate config file
-            if not config.get(CONFIG.SERVER.HOST):
-                LOG.error(
-                    "Host IP not found. Please provide it in config file or set environment variable 'CALM_DSL_PC_IP'"
-                )
-                sys.exit(-1)
+        nc_server_config = self.nc_server_config
+        nc_enabled = nc_server_config.get(CONFIG.NC_SERVER.ENABLED, False)
 
-            if not config.get(CONFIG.SERVER.PORT):
-                LOG.error(
-                    "Host Port not found. Please provide it in config file or set environment variable 'CALM_DSL_PC_PORT'"
-                )
-                sys.exit(-1)
+        try:
+            if (
+                not nc_enabled
+            ):  # if all server variables are present either in env or some other way, not required to validate config file
+                if not config.get(CONFIG.SERVER.HOST):
+                    LOG.error(
+                        "Host IP not found. Please provide it in config file or set environment variable 'CALM_DSL_PC_IP'"
+                    )
+                    sys.exit(-1)
 
-            if not config.get(CONFIG.SERVER.USERNAME):
-                LOG.error(
-                    "Host username not found. Please provide it in config file or set environment variable 'CALM_DSL_PC_USERNAME'"
-                )
-                sys.exit(-1)
+                if not config.get(CONFIG.SERVER.PORT):
+                    LOG.error(
+                        "Host Port not found. Please provide it in config file or set environment variable 'CALM_DSL_PC_PORT'"
+                    )
+                    sys.exit(-1)
 
-            if not config.get(CONFIG.SERVER.PASSWORD):
-                LOG.error(
-                    "Host password not found. Please provide it in config file or set environment variable 'CALM_DSL_PC_PASSWORD'"
-                )
-                sys.exit(-1)
+                if not config.get(CONFIG.SERVER.USERNAME):
+                    LOG.error(
+                        "Host username not found. Please provide it in config file or set environment variable 'CALM_DSL_PC_USERNAME'"
+                    )
+                    sys.exit(-1)
+
+                if not config.get(CONFIG.SERVER.PASSWORD):
+                    LOG.error(
+                        "Host password not found. Please provide it in config file or set environment variable 'CALM_DSL_PC_PASSWORD'"
+                    )
+                    sys.exit(-1)
 
         except:  # validate init_config file, if it's contents are valid
             self.validate_init_config()
@@ -108,6 +115,12 @@ class Context:
             config[CONFIG.NCM_SERVER.NCM_ENABLED] = False
 
         return config
+
+    def get_nc_server_config(self):
+        """
+        Returns the NC server configuration
+        """
+        return self.nc_server_config
 
     def get_project_config(self):
         """returns project configuration"""
@@ -192,6 +205,23 @@ class Context:
         LOG.debug("Updating project in dsl context to {}".format(project_name))
         self.project_config["name"] = project_name
 
+    def update_pc_server_context(self, host, port, pc_username, pc_password):
+        """Overrides the existing server configuration"""
+
+        LOG.debug(
+            "Updating PC server in dsl context to {}, {}, {}, {}".format(
+                host, port, pc_username, pc_password
+            )
+        )
+        self.server_config.update(
+            {
+                CONFIG.SERVER.HOST: host,
+                CONFIG.SERVER.PORT: port,
+                CONFIG.SERVER.USERNAME: pc_username,
+                CONFIG.SERVER.PASSWORD: pc_password,
+            }
+        )
+
     def update_ncm_server_context(self, ncm_enabled, host, port):
         """Overrides the existing NCM server configuration"""
 
@@ -208,6 +238,21 @@ class Context:
             }
         )
 
+    def update_nc_server_context(
+        self, nc_enabled, nc_host, nc_username=None, nc_password=None
+    ):
+        """Overrides the existing NC server configuration"""
+
+        LOG.debug(f"Updating the NC server in DSL context to {nc_enabled}, {nc_host}")
+        self.nc_server_config.update(
+            {
+                CONFIG.NC_SERVER.ENABLED: nc_enabled,
+                CONFIG.NC_SERVER.HOST: nc_host,
+                CONFIG.NC_SERVER.USERNAME: nc_username if nc_username else "",
+                CONFIG.NC_SERVER.PASSWORD: nc_password if nc_password else "",
+            }
+        )
+
     def update_config_file_context(self, config_file):
         """Overrides the existing configuration with passed file configuration"""
 
@@ -216,6 +261,7 @@ class Context:
         cxt_config_handle = get_config_handle(self._CONFIG_FILE)
         self.server_config.update(cxt_config_handle.get_server_config())
         self.ncm_server_config.update(cxt_config_handle.get_ncm_server_config())
+        self.nc_server_config.update(cxt_config_handle.get_nc_server_config())
         self.project_config.update(cxt_config_handle.get_project_config())
         self.log_config.update(cxt_config_handle.get_log_config())
         self.connection_config.update(cxt_config_handle.get_connection_config())
@@ -228,6 +274,7 @@ class Context:
 
         server_config = self.get_server_config()
         ncm_server_config = self.get_ncm_server_config()
+        nc_server_config = self.get_nc_server_config()
         project_config = self.get_project_config()
         log_config = self.get_log_config()
         policy_config = self.get_policy_config()
@@ -240,8 +287,8 @@ class Context:
         config_str = ConfigHandle._render_config_template(
             ip=server_config[CONFIG.SERVER.HOST],
             port=server_config[CONFIG.SERVER.PORT],
-            username=server_config[CONFIG.SERVER.USERNAME],
-            password="xxxxxxxx",  # Do not render password
+            pc_username=server_config[CONFIG.SERVER.USERNAME],
+            pc_password="xxxxxxxx",  # Do not render password
             ncm_enabled=ncm_server_config[CONFIG.NCM_SERVER.NCM_ENABLED],
             ncm_host=ncm_server_config.get(
                 CONFIG.NCM_SERVER.HOST, DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME
@@ -249,6 +296,12 @@ class Context:
             ncm_port=ncm_server_config.get(
                 CONFIG.NCM_SERVER.PORT, DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME
             ),
+            nc_enabled=nc_server_config[CONFIG.NC_SERVER.ENABLED],
+            nc_host=nc_server_config[CONFIG.NC_SERVER.HOST],
+            nc_username=nc_server_config.get(
+                CONFIG.NC_SERVER.USERNAME, DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME
+            ),
+            nc_password="xxxxxxxx",
             api_key_location=server_config.get(
                 CONFIG.SERVER.API_KEY_LOCATION, DSL_CONFIG.EMPTY_CONFIG_ENTITY_NAME
             ),
@@ -267,10 +320,21 @@ class Context:
 
         print(config_str)
 
+    def _set_default_nc_server_config(self, config_handle):
+        """Sets the default NC server config values if not present in the config file."""
+        nc_server_config = config_handle.get_nc_server_config()
+
+        if CONFIG.NC_SERVER.ENABLED not in nc_server_config:
+            nc_server_config[CONFIG.NC_SERVER.ENABLED] = False
+
+        nc_server_config[CONFIG.NC_SERVER.PORT] = ""
+
+        return nc_server_config
+
 
 _ContextHandle = None
 
-
+# TODO: we can use a singleton pattern here to ensure only one instance of Context is created
 def init_context():
 
     global _ContextHandle
