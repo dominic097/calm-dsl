@@ -1,6 +1,7 @@
 from calm.dsl.api.iam_v4_resource import IAMV4ResourceAPI
+from calm.dsl.api.connection import Connection
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock
 import pytest
 
 IS_NC_ENABLED_BY_CONFIG = "calm.dsl.api.ncm_config_util.is_nc_enabled_by_config"
@@ -11,10 +12,22 @@ class TestIAMV4ResourceAPI:
         """
         Set up the test environment for IAMV4ResourceAPI.
         """
-        self._connection = Mock()
+        # Create a proper mock Connection with spec to pass isinstance checks
+        self._connection = Mock(spec=Connection)
+        self._connection.host = "mock-host"
         self._nc_connection = Mock()
         self._nc_connection.get_connection_by_api_type.return_value = self._connection
-        self._iam_resource = IAMV4ResourceAPI(self._nc_connection, "users")
+
+        # Patch the resolver to bypass connection type validation
+        with patch(
+            "calm.dsl.api.resource.APIConnectivityDetailsResolver"
+        ) as mock_resolver_class:
+            mock_resolver = mock_resolver_class.return_value
+            mock_resolver.resolve.return_value = MagicMock(
+                connection=self._connection, api_path="api/iam/v4.0/authn/users"
+            )
+
+            self._iam_resource = IAMV4ResourceAPI(self._nc_connection, "users")
 
     @patch(IS_NC_ENABLED_BY_CONFIG)
     def test_get(self, mock_is_nc_enabled):
