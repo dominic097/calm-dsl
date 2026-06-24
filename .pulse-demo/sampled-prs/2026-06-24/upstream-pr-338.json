@@ -1,0 +1,620 @@
+{
+  "author": {
+    "id": "U_kgDOB1dM9Q",
+    "is_bot": false,
+    "login": "dwivediprab",
+    "name": "Prabhat Dwivedi"
+  },
+  "baseRefName": "master",
+  "body": "",
+  "createdAt": "2025-11-26T06:19:50Z",
+  "files": [
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "CalmVersion"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "README.md"
+    },
+    {
+      "additions": 6,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/api/blueprint.py"
+    },
+    {
+      "additions": 25,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/api/global_variable.py"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/api/handle.py"
+    },
+    {
+      "additions": 14,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/api/tunnel.py"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/builtins/__init__.py"
+    },
+    {
+      "additions": 3,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/builtins/models/account.py"
+    },
+    {
+      "additions": 29,
+      "changeType": "MODIFIED",
+      "deletions": 5,
+      "path": "calm/dsl/builtins/models/account_resources.py"
+    },
+    {
+      "additions": 30,
+      "changeType": "MODIFIED",
+      "deletions": 5,
+      "path": "calm/dsl/builtins/models/ahv_account.py"
+    },
+    {
+      "additions": 75,
+      "changeType": "MODIFIED",
+      "deletions": 22,
+      "path": "calm/dsl/builtins/models/calm_ref.py"
+    },
+    {
+      "additions": 45,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/builtins/models/global_variable.py"
+    },
+    {
+      "additions": 122,
+      "changeType": "MODIFIED",
+      "deletions": 3,
+      "path": "calm/dsl/builtins/models/helper/common.py"
+    },
+    {
+      "additions": 36,
+      "changeType": "MODIFIED",
+      "deletions": 3,
+      "path": "calm/dsl/builtins/models/node_visitor.py"
+    },
+    {
+      "additions": 3,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/builtins/models/provider_test_account.py"
+    },
+    {
+      "additions": 14,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/builtins/models/runbook.py"
+    },
+    {
+      "additions": 5,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/builtins/models/schemas/account.yaml.jinja2"
+    },
+    {
+      "additions": 7,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/builtins/models/schemas/ahv_account.yaml.jinja2"
+    },
+    {
+      "additions": 14,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/builtins/models/schemas/blueprint.yaml.jinja2"
+    },
+    {
+      "additions": 23,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/builtins/models/schemas/global_variable.yaml.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/builtins/models/schemas/main.yaml.jinja2"
+    },
+    {
+      "additions": 8,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/builtins/models/schemas/project.yaml.jinja2"
+    },
+    {
+      "additions": 5,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/builtins/models/schemas/provider_test_account.yaml.jinja2"
+    },
+    {
+      "additions": 20,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/builtins/models/schemas/runbook_service.yaml.jinja2"
+    },
+    {
+      "additions": 5,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/builtins/models/schemas/substrate.yaml.jinja2"
+    },
+    {
+      "additions": 3,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/builtins/models/substrate.py"
+    },
+    {
+      "additions": 70,
+      "changeType": "MODIFIED",
+      "deletions": 6,
+      "path": "calm/dsl/builtins/models/task.py"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/cli/__init__.py"
+    },
+    {
+      "additions": 10,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/cli/accounts.py"
+    },
+    {
+      "additions": 42,
+      "changeType": "MODIFIED",
+      "deletions": 38,
+      "path": "calm/dsl/cli/bps.py"
+    },
+    {
+      "additions": 9,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/cli/constants.py"
+    },
+    {
+      "additions": 7,
+      "changeType": "MODIFIED",
+      "deletions": 3,
+      "path": "calm/dsl/cli/endpoints.py"
+    },
+    {
+      "additions": 974,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/cli/global_variable.py"
+    },
+    {
+      "additions": 205,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/cli/global_variable_commands.py"
+    },
+    {
+      "additions": 60,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/cli/helper/common.py"
+    },
+    {
+      "additions": 23,
+      "changeType": "MODIFIED",
+      "deletions": 3,
+      "path": "calm/dsl/cli/main.py"
+    },
+    {
+      "additions": 25,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/cli/marketplace.py"
+    },
+    {
+      "additions": 17,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/cli/run_script.py"
+    },
+    {
+      "additions": 18,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/cli/runbook_commands.py"
+    },
+    {
+      "additions": 13,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/cli/runbook_utils.py"
+    },
+    {
+      "additions": 106,
+      "changeType": "MODIFIED",
+      "deletions": 25,
+      "path": "calm/dsl/cli/runbooks.py"
+    },
+    {
+      "additions": 150,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/cli/tunnel_commands.py"
+    },
+    {
+      "additions": 504,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/cli/tunnels.py"
+    },
+    {
+      "additions": 3,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/cli/utils.py"
+    },
+    {
+      "additions": 54,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/constants.py"
+    },
+    {
+      "additions": 345,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/db/table_config.py"
+    },
+    {
+      "additions": 3,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/blueprint.py"
+    },
+    {
+      "additions": 8,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/bp_file_helper.py"
+    },
+    {
+      "additions": 40,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/decompile/decompile_render.py"
+    },
+    {
+      "additions": 33,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/file_handler.py"
+    },
+    {
+      "additions": 74,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/decompile/global_variable.py"
+    },
+    {
+      "additions": 6,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/decompile/projects.py"
+    },
+    {
+      "additions": 6,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/decompile/runbook.py"
+    },
+    {
+      "additions": 7,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/decompile/schemas/blueprint.py.jinja2"
+    },
+    {
+      "additions": 5,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/decompile/schemas/cloud_provider.py.jinja2"
+    },
+    {
+      "additions": 33,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/decompile/schemas/global_variable.py.jinja2"
+    },
+    {
+      "additions": 9,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/decompile/schemas/projects.py.jinja2"
+    },
+    {
+      "additions": 13,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/schemas/runbook.py.jinja2"
+    },
+    {
+      "additions": 3,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/decompile/schemas/substrate.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_decision_escript.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_decision_escript_py3.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_decision_powershell.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_decision_python.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_decision_ssh.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_exec_escript.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_exec_escript_py3.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_exec_powershell.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_exec_python.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_exec_ssh.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_http_delete.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_http_get.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_http_post.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_http_put.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_setvariable_escript.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/schemas/task_setvariable_escript_py3.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_setvariable_powershell.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_setvariable_python.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/task_setvariable_ssh.py.jinja2"
+    },
+    {
+      "additions": 12,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/decompile/schemas/tunnel_ref_handle.py.jinja2"
+    },
+    {
+      "additions": 3,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/schemas/var_simple_date.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/schemas/var_simple_datetime.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/schemas/var_simple_int.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/schemas/var_simple_multiline.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/schemas/var_simple_secret_date.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/schemas/var_simple_secret_datetime.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/schemas/var_simple_secret_int.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/schemas/var_simple_secret_multiline.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/schemas/var_simple_secret_string.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/schemas/var_simple_secret_time.py.jinja2"
+    },
+    {
+      "additions": 3,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/schemas/var_simple_string.py.jinja2"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/decompile/schemas/var_simple_time.py.jinja2"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/var_with_options_fromTask_array_date.py.jinja2"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/var_with_options_fromTask_array_datetime.py.jinja2"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/var_with_options_fromTask_array_int.py.jinja2"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/var_with_options_fromTask_array_multiline.py.jinja2"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/var_with_options_fromTask_array_string.py.jinja2"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/var_with_options_fromTask_array_time.py.jinja2"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/var_with_options_fromTask_date.py.jinja2"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/var_with_options_fromTask_datetime.py.jinja2"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/decompile/schemas/var_with_options_fromTask_int.py.jinja2"
+    }
+  ],
+  "headRefName": "dsl-430-release-cut",
+  "labels": [],
+  "number": 338,
+  "state": "MERGED",
+  "title": "CALM-DSL changes for v4.3.0",
+  "updatedAt": "2025-11-26T06:46:32Z",
+  "url": "https://github.com/nutanix/calm-dsl/pull/338"
+}
