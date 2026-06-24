@@ -1,0 +1,26 @@
+{
+  "author": {
+    "id": "U_kgDOB1dM9Q",
+    "is_bot": false,
+    "login": "dwivediprab",
+    "name": "Prabhat Dwivedi"
+  },
+  "baseRefName": "master",
+  "body": "Block MPI BP launch if the global variable is not of MPI project\r\n\r\n(cherry picked from commit 89ee4705e1b31f2c7b756890f399b8a60f8088cc)",
+  "createdAt": "2025-12-05T05:19:26Z",
+  "files": [
+    {
+      "additions": 9,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/cli/marketplace.py"
+    }
+  ],
+  "headRefName": "dsl-430-release-cut2",
+  "labels": [],
+  "number": 339,
+  "state": "MERGED",
+  "title": "Block MPI BP launch if the global variable is not of MPI project",
+  "updatedAt": "2025-12-05T05:28:13Z",
+  "url": "https://github.com/nutanix/calm-dsl/pull/339"
+}
