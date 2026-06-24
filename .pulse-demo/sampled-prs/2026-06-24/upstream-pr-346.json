@@ -1,0 +1,26 @@
+{
+  "author": {
+    "id": "MDQ6VXNlcjcwMzE0MTIy",
+    "is_bot": false,
+    "login": "anant-bansode",
+    "name": ""
+  },
+  "baseRefName": "release/4.3.0.1",
+  "body": "added v4.3.0.1 license file",
+  "createdAt": "2025-12-26T18:19:37Z",
+  "files": [
+    {
+      "additions": 11165,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "oss-disclosures-calm-dsl-v4.3.0.1.txt"
+    }
+  ],
+  "headRefName": "task/add_4301_legal_license_file",
+  "labels": [],
+  "number": 346,
+  "state": "MERGED",
+  "title": "updated v4.3.0.1 license file",
+  "updatedAt": "2025-12-28T06:07:10Z",
+  "url": "https://github.com/nutanix/calm-dsl/pull/346"
+}
