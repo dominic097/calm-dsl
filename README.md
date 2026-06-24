@@ -68,3 +68,4 @@ To raise and track any improvement or a bug, create an open issue in DSL github 
 ## License
 
 **[Apache-2.0 license](https://github.com/nutanix/calm-dsl/blob/master/LICENSE)**
+<!-- Pulse demo seed 2026-06-24: metadata from nutanix/calm-dsl PR #345 -->
