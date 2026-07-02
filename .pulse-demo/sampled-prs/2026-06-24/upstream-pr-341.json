@@ -1,0 +1,26 @@
+{
+  "author": {
+    "id": "U_kgDOB1dM9Q",
+    "is_bot": false,
+    "login": "dwivediprab",
+    "name": "Prabhat Dwivedi"
+  },
+  "baseRefName": "release/4.3.0",
+  "body": "",
+  "createdAt": "2025-12-10T04:30:04Z",
+  "files": [
+    {
+      "additions": 10333,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "oss-disclosures-calm-dsl-v4.3.0.txt"
+    }
+  ],
+  "headRefName": "task/4.3.0-add-license-oss-disclosure",
+  "labels": [],
+  "number": 341,
+  "state": "MERGED",
+  "title": "release v4.3.0 license file",
+  "updatedAt": "2025-12-10T04:56:12Z",
+  "url": "https://github.com/nutanix/calm-dsl/pull/341"
+}
