@@ -2502,3 +2502,5 @@ def set_latest_mpi_data(latest_existing_mpi_data_map, **kwargs):
             icon_name = app_icon_name_uuid_map[icon_uuid] if icon_uuid else None
 
     return icon_name, projects
+
+# Pulse demo seed 2026-06-24: metadata from nutanix/calm-dsl PR #340
