@@ -1,0 +1,620 @@
+{
+  "author": {
+    "id": "U_kgDOB1dM9Q",
+    "is_bot": false,
+    "login": "dwivediprab",
+    "name": "Prabhat Dwivedi"
+  },
+  "baseRefName": "master",
+  "body": "",
+  "createdAt": "2026-03-09T14:32:31Z",
+  "files": [
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "CalmVersion"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "Dockerfile"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "README.md"
+    },
+    {
+      "additions": 7,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/api/__init__.py"
+    },
+    {
+      "additions": 0,
+      "changeType": "DELETED",
+      "deletions": 6,
+      "path": "calm/dsl/api/access_control_policy.py"
+    },
+    {
+      "additions": 328,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/api/api_connectivity_details_resolver.py"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/api/app_icons.py"
+    },
+    {
+      "additions": 8,
+      "changeType": "MODIFIED",
+      "deletions": 8,
+      "path": "calm/dsl/api/application.py"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/api/approval.py"
+    },
+    {
+      "additions": 36,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/api/authorization_policy.py"
+    },
+    {
+      "additions": 18,
+      "changeType": "MODIFIED",
+      "deletions": 15,
+      "path": "calm/dsl/api/blueprint.py"
+    },
+    {
+      "additions": 302,
+      "changeType": "MODIFIED",
+      "deletions": 126,
+      "path": "calm/dsl/api/connection.py"
+    },
+    {
+      "additions": 6,
+      "changeType": "MODIFIED",
+      "deletions": 3,
+      "path": "calm/dsl/api/directory_service.py"
+    },
+    {
+      "additions": 13,
+      "changeType": "MODIFIED",
+      "deletions": 8,
+      "path": "calm/dsl/api/endpoint.py"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/api/environment.py"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/api/global_variable.py"
+    },
+    {
+      "additions": 11,
+      "changeType": "MODIFIED",
+      "deletions": 4,
+      "path": "calm/dsl/api/groups_api.py"
+    },
+    {
+      "additions": 149,
+      "changeType": "MODIFIED",
+      "deletions": 32,
+      "path": "calm/dsl/api/handle.py"
+    },
+    {
+      "additions": 267,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/api/iam_v4_resource.py"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/api/job.py"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/api/marketplace.py"
+    },
+    {
+      "additions": 18,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/api/meta.py"
+    },
+    {
+      "additions": 50,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/api/multidomain.py"
+    },
+    {
+      "additions": 20,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/api/ncm_config_util.py"
+    },
+    {
+      "additions": 18,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/api/network_function_chains.py"
+    },
+    {
+      "additions": 4,
+      "changeType": "MODIFIED",
+      "deletions": 4,
+      "path": "calm/dsl/api/network_group.py"
+    },
+    {
+      "additions": 71,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/api/onboarding.py"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/api/policy.py"
+    },
+    {
+      "additions": 18,
+      "changeType": "MODIFIED",
+      "deletions": 9,
+      "path": "calm/dsl/api/project.py"
+    },
+    {
+      "additions": 14,
+      "changeType": "MODIFIED",
+      "deletions": 14,
+      "path": "calm/dsl/api/provider.py"
+    },
+    {
+      "additions": 4,
+      "changeType": "MODIFIED",
+      "deletions": 4,
+      "path": "calm/dsl/api/quotas.py"
+    },
+    {
+      "additions": 69,
+      "changeType": "MODIFIED",
+      "deletions": 111,
+      "path": "calm/dsl/api/resource.py"
+    },
+    {
+      "additions": 6,
+      "changeType": "MODIFIED",
+      "deletions": 6,
+      "path": "calm/dsl/api/resource_type.py"
+    },
+    {
+      "additions": 28,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/api/role.py"
+    },
+    {
+      "additions": 31,
+      "changeType": "MODIFIED",
+      "deletions": 26,
+      "path": "calm/dsl/api/runbook.py"
+    },
+    {
+      "additions": 6,
+      "changeType": "MODIFIED",
+      "deletions": 6,
+      "path": "calm/dsl/api/setting.py"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/api/showback.py"
+    },
+    {
+      "additions": 3,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/api/tunnel.py"
+    },
+    {
+      "additions": 59,
+      "changeType": "MODIFIED",
+      "deletions": 10,
+      "path": "calm/dsl/api/user.py"
+    },
+    {
+      "additions": 131,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "calm/dsl/api/user_api_mapper.py"
+    },
+    {
+      "additions": 41,
+      "changeType": "MODIFIED",
+      "deletions": 84,
+      "path": "calm/dsl/api/user_group.py"
+    },
+    {
+      "additions": 78,
+      "changeType": "MODIFIED",
+      "deletions": 20,
+      "path": "calm/dsl/api/util.py"
+    },
+    {
+      "additions": 13,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/api/version.py"
+    },
+    {
+      "additions": 9,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/builtins/models/account_resources.py"
+    },
+    {
+      "additions": 34,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/builtins/models/ahv_account.py"
+    },
+    {
+      "additions": 215,
+      "changeType": "MODIFIED",
+      "deletions": 5,
+      "path": "calm/dsl/builtins/models/helper/common.py"
+    },
+    {
+      "additions": 5,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/builtins/models/providers.py"
+    },
+    {
+      "additions": 6,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/builtins/models/schemas/ahv_account.yaml.jinja2"
+    },
+    {
+      "additions": 69,
+      "changeType": "MODIFIED",
+      "deletions": 23,
+      "path": "calm/dsl/cli/accounts.py"
+    },
+    {
+      "additions": 0,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/cli/acp_commands.py"
+    },
+    {
+      "additions": 83,
+      "changeType": "MODIFIED",
+      "deletions": 40,
+      "path": "calm/dsl/cli/acps.py"
+    },
+    {
+      "additions": 3,
+      "changeType": "MODIFIED",
+      "deletions": 3,
+      "path": "calm/dsl/cli/app_icon_commands.py"
+    },
+    {
+      "additions": 4,
+      "changeType": "MODIFIED",
+      "deletions": 7,
+      "path": "calm/dsl/cli/approval.py"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/cli/apps.py"
+    },
+    {
+      "additions": 3,
+      "changeType": "MODIFIED",
+      "deletions": 6,
+      "path": "calm/dsl/cli/bp_commands.py"
+    },
+    {
+      "additions": 13,
+      "changeType": "MODIFIED",
+      "deletions": 8,
+      "path": "calm/dsl/cli/bps.py"
+    },
+    {
+      "additions": 12,
+      "changeType": "MODIFIED",
+      "deletions": 26,
+      "path": "calm/dsl/cli/directory_services.py"
+    },
+    {
+      "additions": 3,
+      "changeType": "MODIFIED",
+      "deletions": 8,
+      "path": "calm/dsl/cli/endpoints.py"
+    },
+    {
+      "additions": 6,
+      "changeType": "MODIFIED",
+      "deletions": 8,
+      "path": "calm/dsl/cli/global_variable.py"
+    },
+    {
+      "additions": 23,
+      "changeType": "MODIFIED",
+      "deletions": 4,
+      "path": "calm/dsl/cli/group_commands.py"
+    },
+    {
+      "additions": 95,
+      "changeType": "MODIFIED",
+      "deletions": 74,
+      "path": "calm/dsl/cli/groups.py"
+    },
+    {
+      "additions": 18,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/cli/helper/common.py"
+    },
+    {
+      "additions": 238,
+      "changeType": "MODIFIED",
+      "deletions": 79,
+      "path": "calm/dsl/cli/init_command.py"
+    },
+    {
+      "additions": 28,
+      "changeType": "MODIFIED",
+      "deletions": 13,
+      "path": "calm/dsl/cli/main.py"
+    },
+    {
+      "additions": 119,
+      "changeType": "MODIFIED",
+      "deletions": 86,
+      "path": "calm/dsl/cli/marketplace.py"
+    },
+    {
+      "additions": 55,
+      "changeType": "MODIFIED",
+      "deletions": 61,
+      "path": "calm/dsl/cli/marketplace_bp_commands.py"
+    },
+    {
+      "additions": 11,
+      "changeType": "MODIFIED",
+      "deletions": 11,
+      "path": "calm/dsl/cli/marketplace_commands_main.py"
+    },
+    {
+      "additions": 19,
+      "changeType": "MODIFIED",
+      "deletions": 19,
+      "path": "calm/dsl/cli/marketplace_item_commands.py"
+    },
+    {
+      "additions": 47,
+      "changeType": "MODIFIED",
+      "deletions": 49,
+      "path": "calm/dsl/cli/marketplace_runbook_commands.py"
+    },
+    {
+      "additions": 18,
+      "changeType": "MODIFIED",
+      "deletions": 24,
+      "path": "calm/dsl/cli/policy.py"
+    },
+    {
+      "additions": 26,
+      "changeType": "MODIFIED",
+      "deletions": 12,
+      "path": "calm/dsl/cli/projects.py"
+    },
+    {
+      "additions": 5,
+      "changeType": "MODIFIED",
+      "deletions": 7,
+      "path": "calm/dsl/cli/provider_commands.py"
+    },
+    {
+      "additions": 5,
+      "changeType": "MODIFIED",
+      "deletions": 12,
+      "path": "calm/dsl/cli/providers.py"
+    },
+    {
+      "additions": 10,
+      "changeType": "MODIFIED",
+      "deletions": 23,
+      "path": "calm/dsl/cli/roles.py"
+    },
+    {
+      "additions": 29,
+      "changeType": "MODIFIED",
+      "deletions": 22,
+      "path": "calm/dsl/cli/runbooks.py"
+    },
+    {
+      "additions": 5,
+      "changeType": "MODIFIED",
+      "deletions": 16,
+      "path": "calm/dsl/cli/tunnels.py"
+    },
+    {
+      "additions": 69,
+      "changeType": "MODIFIED",
+      "deletions": 9,
+      "path": "calm/dsl/cli/user_commands.py"
+    },
+    {
+      "additions": 176,
+      "changeType": "MODIFIED",
+      "deletions": 57,
+      "path": "calm/dsl/cli/users.py"
+    },
+    {
+      "additions": 8,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "calm/dsl/config/config.ini.jinja2"
+    },
+    {
+      "additions": 56,
+      "changeType": "MODIFIED",
+      "deletions": 5,
+      "path": "calm/dsl/config/config.py"
+    },
+    {
+      "additions": 7,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/config/constants.py"
+    },
+    {
+      "additions": 91,
+      "changeType": "MODIFIED",
+      "deletions": 27,
+      "path": "calm/dsl/config/context.py"
+    },
+    {
+      "additions": 87,
+      "changeType": "MODIFIED",
+      "deletions": 13,
+      "path": "calm/dsl/constants.py"
+    },
+    {
+      "additions": 372,
+      "changeType": "MODIFIED",
+      "deletions": 191,
+      "path": "calm/dsl/db/table_config.py"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "calm/dsl/providers/plugins/k8s/main.py"
+    },
+    {
+      "additions": 39,
+      "changeType": "MODIFIED",
+      "deletions": 4,
+      "path": "calm/dsl/store/cache.py"
+    },
+    {
+      "additions": 23,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "examples/accounts/remote_ahv_account_with_domain_attribute.py"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "metadata.json"
+    },
+    {
+      "additions": 123,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "release-notes/4.3.1/README.md"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "release_config.json"
+    },
+    {
+      "additions": 3,
+      "changeType": "MODIFIED",
+      "deletions": 3,
+      "path": "requirements.txt"
+    },
+    {
+      "additions": 11,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "tests/ahv_vm_overlay_subnet/test_overlay_subnet_bp.py"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "tests/api_interface/test_apps.py"
+    },
+    {
+      "additions": 31,
+      "changeType": "MODIFIED",
+      "deletions": 9,
+      "path": "tests/api_interface/test_projects.py"
+    },
+    {
+      "additions": 6,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "tests/api_interface/test_runbooks/test_exec_task_in_overlay_subnet.py"
+    },
+    {
+      "additions": 12,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "tests/api_interface/test_runbooks/test_files/decision_task_with_multiple_target.py"
+    },
+    {
+      "additions": 34,
+      "changeType": "MODIFIED",
+      "deletions": 6,
+      "path": "tests/api_interface/test_runbooks/test_files/http_task.py"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "tests/api_interface/test_runbooks/test_http_task.py"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 3,
+      "path": "tests/api_interface/test_runbooks/test_runbooks.py"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 0,
+      "path": "tests/cli/runtime_helpers/ahv/test_app_edit_json.py"
+    }
+  ],
+  "headRefName": "dsl-431-release-cut",
+  "labels": [],
+  "number": 347,
+  "state": "MERGED",
+  "title": "CALM-DSL changes for v4.3.1",
+  "updatedAt": "2026-03-09T15:19:08Z",
+  "url": "https://github.com/nutanix/calm-dsl/pull/347"
+}
