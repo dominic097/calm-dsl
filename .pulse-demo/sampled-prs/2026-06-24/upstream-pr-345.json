@@ -1,0 +1,56 @@
+{
+  "author": {
+    "id": "U_kgDOB1dM9Q",
+    "is_bot": false,
+    "login": "dwivediprab",
+    "name": "Prabhat Dwivedi"
+  },
+  "baseRefName": "master",
+  "body": "",
+  "createdAt": "2025-12-23T12:10:28Z",
+  "files": [
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "CalmVersion"
+    },
+    {
+      "additions": 2,
+      "changeType": "MODIFIED",
+      "deletions": 2,
+      "path": "README.md"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "calm/dsl/cli/main.py"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "metadata.json"
+    },
+    {
+      "additions": 3,
+      "changeType": "ADDED",
+      "deletions": 0,
+      "path": "release-notes/4.3.0.1/README.md"
+    },
+    {
+      "additions": 1,
+      "changeType": "MODIFIED",
+      "deletions": 1,
+      "path": "release_config.json"
+    }
+  ],
+  "headRefName": "dsl-4301-release-cut",
+  "labels": [],
+  "number": 345,
+  "state": "MERGED",
+  "title": "CALM-DSL changes for v4.3.0.1",
+  "updatedAt": "2025-12-23T12:25:20Z",
+  "url": "https://github.com/nutanix/calm-dsl/pull/345"
+}
